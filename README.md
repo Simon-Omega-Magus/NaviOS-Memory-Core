@@ -21,6 +21,7 @@ In either case, your AI will programmatically spawn a Wisp (Child Model) to gene
 ## Setup
 
 1. **Install Requirements:**
+   *(Note: Cloning a GitHub repository only downloads the raw code files. You must still install the external Python libraries that the code relies on, like PyTorch and NetworkX).*
    ```bash
    pip install -r requirements.txt
    ```
