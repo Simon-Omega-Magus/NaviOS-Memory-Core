@@ -7,6 +7,7 @@ import datetime
 import subprocess
 import tempfile
 import shutil
+import uuid
 from pathlib import Path
 
 BRAIN_MATTER_ROOT = Path(os.environ.get("NAVIOS_CORE_ROOT", ".")) / "Brain-Matter"
@@ -19,27 +20,42 @@ def get_file_hash(filepath):
             hasher.update(chunk)
     return hasher.hexdigest()
 
-import uuid
-
-def get_nfid(path, bm_dir_base):
-    # Try xattr first
-    try:
-        import xattr
-        val = xattr.getxattr(path, 'user.nfid')
-        return val.decode('utf-8')
-    except Exception:
-        pass
+def get_or_create_nc(path, bm_dir_base):
+    """
+    Returns (node_id, bm_dir).
+    If the file is already hardlinked into the Brain-Matter vault, we find it by inode.
+    If not, we generate a new UUID and hardlink it.
+    """
+    stat_info = os.stat(path)
+    inode = stat_info.st_ino
     
-    # Try to find existing metadata in bm_dir_base
-    meta_name = f".metadata-{path.name}.yaml"
-    for d in bm_dir_base.glob("nf-*"):
-        if (d / meta_name).exists():
-            return d.name
+    # 1. Search for existing Neural-Cluster by inode
+    if stat_info.st_nlink > 1:
+        for d in bm_dir_base.glob("nf-*"):
+            if d.is_dir():
+                target_link = d / path.name
+                if target_link.exists() and target_link.stat().st_ino == inode:
+                    return d.name, d
+                    
+    # 2. Not found or not linked. Create new UUID.
+    node_id = f"nf-{uuid.uuid4()}"
+    bm_dir = bm_dir_base / node_id
+    bm_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Hardlink the file into the vault (for Neuron-Files only, directories can't be hardlinked safely across all OSes)
+    if path.is_file():
+        target_link = bm_dir / path.name
+        if target_link.exists():
+            target_link.unlink()
+        try:
+            os.link(path, target_link)
+        except Exception as e:
+            print(f"Warning: Failed to create hardlink for {path.name}. Fallback to copying. Error: {e}")
+            shutil.copy2(path, target_link)
             
-    # Generate new UUID if not found
-    return f"nf-{uuid.uuid4()}"
+    return node_id, bm_dir
 
-def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False, is_lite=False):
+def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False, is_lite=False, backup_only=False):
     path = Path(filepath).resolve()
     if not path.exists():
         print(f"Error: {path} does not exist.")
@@ -51,11 +67,7 @@ def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False
     bm_dir_base = BRAIN_MATTER_ROOT
     bm_dir_base.mkdir(parents=True, exist_ok=True)
     
-    node_id = get_nfid(path, bm_dir_base)
-    
-    bm_dir = bm_dir_base / node_id
-    bm_dir.mkdir(parents=True, exist_ok=True)
-
+    node_id, bm_dir = get_or_create_nc(path, bm_dir_base)
     metadata_file = bm_dir / f".metadata-{path.name}.yaml"
     
     # 1. The Backup Phase (Dark Matter)
@@ -63,24 +75,29 @@ def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False
     bu_filename = f".BU-{path.name}-{timestamp}.zip"
     bu_path = bm_dir / bu_filename
     
-    print(f"[{path.name}] 1. Generating Backup...")
+    print(f"[{path.name}] 1. Generating Neural-Cluster Backup...")
     if is_dir:
-        # For directories, backup the directory itself recursively, and the vault contents
         zip_cmd = ["zip", "-r", str(bu_path), str(path)]
     else:
-        zip_cmd = ["zip", "-j", str(bu_path), str(path)]
+        # Zip the existing contents of the bm_dir before we mutate
+        zip_cmd = ["zip", "-j", str(bu_path)]
         
     for item in bm_dir.iterdir():
-        if item.is_file() and not item.name.startswith(".BU-"):
+        if item.is_file() and not item.name.startswith(".BU-") and item.name != path.name:
             zip_cmd.append(str(item))
             
-    subprocess.run(zip_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    print(f"  -> Saved to {bu_path}")
+    if len(zip_cmd) > 3 or is_dir:
+        subprocess.run(zip_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print(f"  -> Saved to {bu_path}")
+
+    if backup_only:
+        print(f"[{path.name}] Backup complete. Exiting.")
+        return
 
     # 2. Metadata Update Phase
     print(f"[{path.name}] 2. Updating Metadata...")
     if metadata_file.exists():
-        with open(metadata_file, 'r') as f:
+        with open(metadata_file, 'r', encoding='utf-8') as f:
             metadata = yaml.safe_load(f) or {}
     else:
         metadata = {'nfid': node_id, 'original_path': str(path), 'type': 'CN' if is_dir else 'NF'}
@@ -90,23 +107,21 @@ def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False
         
     metadata['last_updated'] = datetime.datetime.now().isoformat()
     metadata['has_l0_abstract'] = True
+    if 'date_created' not in metadata:
+        metadata['date_created'] = metadata.get('created_at', metadata['last_updated'])
+    metadata['edit_count'] = metadata.get('edit_count', 0) + 1
     
-    # Track the model and confidence level
     metadata['model'] = 'gemini-3.1-flash-lite-preview' if is_lite else 'gemini-3-flash-preview'
     metadata['confidence'] = 0.4 if is_lite else 0.8
 
-    # Determine L0 abstract filename based on target type
     if is_dir:
-        if is_recursive:
-            l0_filename = f".flash-a-r-{path.name}.md"
-        else:
-            l0_filename = f".flash-a-d-{path.name}.md"
+        l0_filename = f".flash-a-r-{path.name}.md" if is_recursive else f".flash-a-d-{path.name}.md"
     else:
         l0_filename = f".flash-a-f-{path.name}.md"
         
     metadata['l0_filepath'] = str(bm_dir / l0_filename)
 
-    # 3. Subjective Holographic Links
+    # 3. Subjective Holographic Links (Legacy / Manual)
     if faerie_name and new_links:
         link_key = f"links_{faerie_name.lower()}"
         if link_key not in metadata:
@@ -116,26 +131,28 @@ def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False
                 metadata[link_key].append(link)
         print(f"  -> Added {len(new_links)} subjective links for {faerie_name}.")
 
-    with open(metadata_file, 'w') as f:
+    with open(metadata_file, 'w', encoding='utf-8') as f:
+        f.write("---\n")
         yaml.dump(metadata, f, default_flow_style=False)
 
-    # 4. Myelin-Wisp Saturation Phase
+    # 4. Purge Stale White-Matter (L0, L1, L2) before Wisp regeneration
+    for item in bm_dir.iterdir():
+        if item.is_file() and item.name.startswith(".flash-"):
+            item.unlink()
+
+    # 5. Myelin-Wisp Saturation Phase
     print(f"[{path.name}] 3. Spawning Myelin-Wisp...")
     
     if is_dir:
-        if is_recursive:
-            wisp_name = "myelin-r-wisp.md"
-            prompt_text = f"Distill the recursive directory tree: {path}"
-        else:
-            wisp_name = "myelin-d-wisp.md"
-            prompt_text = f"Distill the flat directory: {path}"
+        wisp_name = "myelin-r-wisp.md" if is_recursive else "myelin-d-wisp.md"
+        prompt_text = f"Distill the directory: {path}"
     else:
         wisp_name = "myelin-f-wisp.md"
         prompt_text = f"Distill the Neuron-File: {path}"
 
     wisp_home = tempfile.mkdtemp(prefix="wisp_home_")
     
-    # Copy essential configuration and auth files so the CLI can authenticate
+    # Copy configuration
     base_gemini = os.path.expanduser("~/.gemini")
     target_gemini = os.path.join(wisp_home, ".gemini")
     if os.path.exists(base_gemini):
@@ -164,34 +181,15 @@ def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False
         try:
             cli_json = json.loads(stdout.decode())
             wisp_response_str = cli_json.get("response", "")
-            
             wisp_response_str = wisp_response_str.strip()
             
-            # Aggressively extract the JSON block in case the LLM added conversational text
             start_idx = wisp_response_str.find('{')
             end_idx = wisp_response_str.rfind('}')
             if start_idx != -1 and end_idx != -1:
                 wisp_response_str = wisp_response_str[start_idx:end_idx+1]
                 wisp_json = json.loads(wisp_response_str)
             else:
-                # FALLBACK: If LLM completely ignored the JSON schema and output raw markdown
-                import re
-                l0_match = re.search(r'(?i)(?:#+|L0|Abstract).*?\n(.*?)(?=\n(?:#+|L1|Summary))', wisp_response_str, re.DOTALL)
-                l1_match = re.search(r'(?i)(?:#+|L1|Summary).*?\n(.*?)(?=\n(?:#+|L2|Lesser))', wisp_response_str, re.DOTALL)
-                l2_match = re.search(r'(?i)(?:#+|L2|Lesser).*?\n(.*)', wisp_response_str, re.DOTALL)
-                
-                if l0_match and l1_match and l2_match:
-                    prefix = "d" if is_dir and not is_recursive else "r" if is_recursive else "f"
-                    wisp_json = {
-                        "directory": ".",
-                        "files": {
-                            f".flash-a-{prefix}-{path.name}.md": f"# L0 Abstract\n\n{l0_match.group(1).strip()}",
-                            f".flash-s-{prefix}-{path.name}.md": f"# L1 Summary\n\n{l1_match.group(1).strip()}",
-                            f".flash-ls-{prefix}-{path.name}.md": f"# L2 Lesser-Synthesis\n\n{l2_match.group(1).strip()}"
-                        }
-                    }
-                else:
-                    raise json.JSONDecodeError("No JSON object could be decoded and Fallback Regex failed.", wisp_response_str, 0)
+                raise json.JSONDecodeError("No JSON object could be decoded.", wisp_response_str, 0)
                 
             wisp_json["directory"] = str(bm_dir) 
             
@@ -213,13 +211,9 @@ if __name__ == '__main__':
     parser.add_argument("filepath", help="The target NF or Directory to mutate.")
     parser.add_argument("--faerie", help="The name of the Faerie adding subjective links.")
     parser.add_argument("--links", nargs="+", help="A list of subjective filepaths or concepts to link.", default=[])
-    parser.add_argument("--recursive", action="store_true", help="If target is a directory, process it as a CA (recursive) instead of CN (flat).")
-    parser.add_argument("--lite", action="store_true", help="Use the faster/cheaper gemini-3.1-flash-lite model and tag the output with a lower confidence score.")
+    parser.add_argument("--recursive", action="store_true", help="Process directory as CA (recursive).")
+    parser.add_argument("--lite", action="store_true", help="Use faster/cheaper lite model.")
+    parser.add_argument("--backup-only", action="store_true", help="Only perform the NC backup, do not mutate White-Matter.")
     
     args = parser.parse_args()
-    mutate_target(args.filepath, args.faerie, args.links, args.recursive, args.lite)
-add_argument("--recursive", action="store_true", help="If target is a directory, process it as a CA (recursive) instead of CN (flat).")
-    parser.add_argument("--lite", action="store_true", help="Use the faster/cheaper gemini-3.1-flash-lite model and tag the output with a lower confidence score.")
-    
-    args = parser.parse_args()
-    mutate_target(args.filepath, args.faerie, args.links, args.recursive, args.lite)
+    mutate_target(args.filepath, args.faerie, args.links, args.recursive, args.lite, args.backup_only)

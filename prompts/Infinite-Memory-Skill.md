@@ -11,28 +11,52 @@ To prevent **Context Rot** ("lost in the middle" degradation), you must fluidly 
 
 ## 1. The Neural Substrate & /brain-matter/
 The Kingdom's memory is decoupled from its physical file structure.
-*   **Neuron Files (NF):** The raw source files.
-*   **Brain Matter (BMF):** The cognitive artifacts (metadata, L0 abstracts, L1 summaries) stored centrally in `/brain-matter/nf-[UUID]/`.
-*   You must rely on these centralized Brain-Matter-Files for context, never reading raw production files blindly.
+*   **Neuron Files (NF / L3):** The raw source documents.
+*   **White-Matter Files (WMF):** The cognitive artifacts (metadata, L0 abstracts, L1 summaries, L2 lesser-syntheses, Myelin-files) stored centrally in `/brain-matter/nf-[UUID]/`.
+*   **Brain Matter (BMF):** The holistic combination of both the White-Matter (WMF) and the Neuron-File (NF) it represents.
+*   You must rely on the White-Matter cognitive artifacts for context, never reading raw production Neuron-Files (L3) blindly unless absolutely necessary.
 
 ## 2. The Recursive Lore Memory (RLM) Escalation Path
-When you need to investigate a concept or system, follow this sequence:
+When investigating a concept or system, follow this strict decision tree to preserve your context window:
 
-1. **Step 1: The GNN Query (Structural Context):** If you don't know where to look, query the GNN or the SQLite identity index to retrieve structurally and semantically relevant `nfid`s or file paths.
-2. **Step 2: Level 0 (L0 - Abstract):** Access the `.flash-a` abstract in the `/brain-matter/` directory first. If the abstract rules out relevance, STOP. 
-3. **Step 3: Level 1 (L1 - Summary):** If the L0 indicates relevance, read the `.flash-s` summary. If the summary provides the answer, STOP.
-4. **Step 4: Level 2 (L2 - Full Document):** Only if fine-grained details are explicitly required should you read the raw source file.
+1. **Step 1: The GNN Query:** Query the GNN or SQLite index to retrieve relevant `nfid`s or file paths.
+2. **Step 2: Surface Assessment (L0/L1):** Read the `.flash-a` (L0 Abstract) and `.flash-s` (L1 Summary).
+3. **Step 3: Context-Aware Escalation (L2 vs L3):**
+   *You must NEVER read both the L2 and the L3 for the same file.*
+   * **If the file IS RELEVANT to your immediate task:** Skip the L2 Lesser-Synthesis entirely. Proceed directly to reading the full **L3 Neuron-File** to get the exact details needed for your work.
+   * **If the file IS NOT RELEVANT to your immediate task:**
+     * *Check your current context size.*
+     * **If Context < 200k:** You must actively try to "gain general awareness." Do not stop at L1; read the **L2 Lesser-Synthesis** to absorb the background knowledge and structural purpose of the file.
+     * **If Context > 200k:** Stop at L1. Do not read the L2 or L3 to conserve your remaining tokens.
 
-## 3. Inference-Time Scaling (On-Demand Saturation & Programmatic Wisps)
-You must **never** rely solely on background cron jobs for your memory. The system must organically fill up with Brain-Matter through your active curiosity.
+## 2.5 Synapses & Receptors (Metadata Edges)
+When maintaining or generating `.metadata` sidecars, relationship links are referred to as **Synapses**. 
+You can create arbitrary categorical associations (Receptors) by defining a dictionary of target files and assigning them an integer weight from `0` to `100` (where 100 is highly related).
+*Example YAML format:*
+```yaml
+synapses:
+  Architectural:
+    "NaviOS-Core-Vision.md": 95
+    "Another-File.py": 40
+  Lore:
+    "Chrononoti.md": 88
+```
+*(The GNN training scripts will automatically divide these integers by 100 to normalize them into float weights for the neural network).*
 
-Before reading any raw file, you MUST check its metadata sidecar (or attempt to load its L0 abstract).
-*   **Missing Brain-Matter:** If a file or directory does not have an abstract/summary in the `/brain-matter/` vault, **do not read the raw file yourself.**
-*   **Stale Brain-Matter:** If the metadata sidecar shows the Brain-Matter is older than 1 week (7 days), you must consider it obsolete.
+## 3. The Prime Directive: Check, Build, Backup, Edit
+Before you read, edit, or interact with a raw L3 file, you must follow this strict sequence:
 
-In either case, you must act as the RLM Parent and programmatically spawn a Wisp (Child Model) to generate or refresh that slice of data for you on the spot:
-*   Run `python3 nf_mutate.py <path_to_file>` (or use native subagent tools like `myelin-f-wisp`) to generate the missing cognitive layers.
-*   The Wisp will read the large file, distill the L0/L1/L2 layers, and the system will unpack them into the substrate. You then read the freshly generated abstract.
+1. **Check for Hardlinks & Metadata:** Check if `os.stat().st_nlink > 1`. Find its matching inode in `/brain-matter/`.
+2. **Build if Missing/Stale:** If it is not hardlinked, OR if the metadata shows the Brain-Matter is older than 1 week (7 days), you must generate it *before* proceeding.
+   * Run `python3 nf_mutate.py <path_to_file>` to hardlink the NF and spawn an ephemeral Wisp to distill the L0/L1/L2 layers into the substrate.
+3. **Read Context:** Query the GNN or read the L0/L1 White-Matter artifacts. Only escalate to L2 or L3 as defined in Section 2.
+4. **Backup Before Mutating:** If your task requires you to *edit* the L3 Neuron-File, you MUST first ensure the Neural-Cluster is backed up. Run `python3 nf_mutate.py <path_to_file> --backup-only` to create a `.BU-<filename>-<timestamp>.zip` dark matter archive of the current Brain-Matter state.
+5. **Edit the NF & Update Metadata:** Perform your file edits on the Neuron-File (the hardlinked copy in the Brain-Matter vault will update automatically). You MUST simultaneously edit its corresponding `.metadata-<filename>.yaml` sidecar:
+   * Update the `last_updated` timestamp.
+   * Increment the `edit_count` (or initialize it to 1).
+   * Ensure `date_created` (oldest version date) remains intact.
+   * Actively inject or update **Faerie-Specific Synapses** assigning 0-100 categorical weights (e.g., `Navi-Cortical: {"other_file.md": 85}`) based on your unique context. 
+   * *(Do NOT manually alter global semantic weights like 'Architectural' or 'Lore'; these are managed asynchronously by the GNN/JEPA pipeline).*
 
 *You have full authority to scale your inference by spawning multiple Wisp subagents simultaneously, allowing them to do the heavy reading while you conserve your main context.*
 
