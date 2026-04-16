@@ -167,7 +167,7 @@ def main():
     nodes_by_domain = {}
     
     def resolve_target(tgt):
-        if tgt.startswith('nf-'): return tgt
+        if tgt.startswith(('nf-', 'cn-', 'ca-')): return tgt
         return filepath_to_nfid.get(tgt, tgt)
 
     print("Pass 2: Weaving Holographic Edges...")
@@ -189,6 +189,11 @@ def main():
                             'source': nfid, 'target': tgt_nfid,
                             'relationship': rel_type, 'weight': 1.0, 'date_added': date_str
                         })
+
+        # Ontology Types (Categorical Node Features)
+        ontology_types = data.get('ontology_types', [])
+        if isinstance(ontology_types, list):
+            parsed_data[nfid]['ontology_types'] = ontology_types
 
         # Hard link siblings
         for sibling in data.get('hard_link_siblings', []):

@@ -20,7 +20,7 @@ def get_file_hash(filepath):
             hasher.update(chunk)
     return hasher.hexdigest()
 
-def get_or_create_nc(path, bm_dir_base):
+def get_or_create_nc(path, bm_dir_base, is_recursive=False):
     """
     Returns (node_id, bm_dir).
     If the file is already hardlinked into the Brain-Matter vault, we find it by inode.
@@ -31,14 +31,18 @@ def get_or_create_nc(path, bm_dir_base):
     
     # 1. Search for existing Neural-Cluster by inode
     if stat_info.st_nlink > 1:
-        for d in bm_dir_base.glob("nf-*"):
-            if d.is_dir():
+        for d in bm_dir_base.iterdir():
+            if d.is_dir() and d.name.startswith(('nf-', 'cn-', 'ca-')):
                 target_link = d / path.name
                 if target_link.exists() and target_link.stat().st_ino == inode:
                     return d.name, d
                     
     # 2. Not found or not linked. Create new UUID.
-    node_id = f"nf-{uuid.uuid4()}"
+    if path.is_dir():
+        prefix = "ca" if is_recursive else "cn"
+    else:
+        prefix = "nf"
+    node_id = f"{prefix}-{uuid.uuid4()}"
     bm_dir = bm_dir_base / node_id
     bm_dir.mkdir(parents=True, exist_ok=True)
     
@@ -67,7 +71,7 @@ def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False
     bm_dir_base = BRAIN_MATTER_ROOT
     bm_dir_base.mkdir(parents=True, exist_ok=True)
     
-    node_id, bm_dir = get_or_create_nc(path, bm_dir_base)
+    node_id, bm_dir = get_or_create_nc(path, bm_dir_base, is_recursive)
     metadata_file = bm_dir / f".metadata-{path.name}.yaml"
     
     # 1. The Backup Phase (Dark Matter)
@@ -100,7 +104,7 @@ def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False
         with open(metadata_file, 'r', encoding='utf-8') as f:
             metadata = yaml.safe_load(f) or {}
     else:
-        metadata = {'nfid': node_id, 'original_path': str(path), 'type': 'CN' if is_dir else 'NF'}
+        metadata = {'nfid': node_id, 'original_path': str(path), 'type': 'CA' if is_recursive else ('CN' if is_dir else 'NF')}
 
     if not is_dir:
         metadata['content_hash'] = get_file_hash(path)
@@ -115,9 +119,9 @@ def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False
     metadata['confidence'] = 0.4 if is_lite else 0.8
 
     if is_dir:
-        l0_filename = f".flash-a-r-{path.name}.md" if is_recursive else f".flash-a-d-{path.name}.md"
+        l0_filename = f".flash-0-r-{path.name}.md" if is_recursive else f".flash-0-d-{path.name}.md"
     else:
-        l0_filename = f".flash-a-f-{path.name}.md"
+        l0_filename = f".flash-0-f-{path.name}.md"
         
     metadata['l0_filepath'] = str(bm_dir / l0_filename)
 
@@ -187,14 +191,61 @@ def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False
             end_idx = wisp_response_str.rfind('}')
             if start_idx != -1 and end_idx != -1:
                 wisp_response_str = wisp_response_str[start_idx:end_idx+1]
-                wisp_json = json.loads(wisp_response_str)
+                wisp_json = json.loads(wisp_response_str, strict=False)
             else:
-                raise json.JSONDecodeError("No JSON object could be decoded.", wisp_response_str, 0)
+                # FALLBACK: If LLM completely ignored the JSON schema and output raw markdown
+                import re
+                l0_match = re.search(r'(?i)(?:#+|L0|Abstract).*?\n(.*?)(?=\n(?:#+|L1|Summary))', wisp_response_str, re.DOTALL)
+                l1_match = re.search(r'(?i)(?:#+|L1|Summary).*?\n(.*?)(?=\n(?:#+|L2|Lesser))', wisp_response_str, re.DOTALL)
+                l2_match = re.search(r'(?i)(?:#+|L2|Lesser).*?\n(.*)', wisp_response_str, re.DOTALL)
                 
-            wisp_json["directory"] = str(bm_dir) 
-            
-            unpacker_process = subprocess.Popen([str(UNPACKER_SCRIPT)], stdin=subprocess.PIPE)
-            unpacker_process.communicate(input=json.dumps(wisp_json).encode())
+                if l0_match and l1_match and l2_match:
+                    prefix = "d" if is_dir and not is_recursive else "r" if is_recursive else "f"
+                    wisp_json = {
+                        "directory": ".",
+                        "files": {
+                            f".flash-0-{prefix}-{path.name}.md": f"# L0 Abstract\n\n{l0_match.group(1).strip()}",
+                            f".flash-1-{prefix}-{path.name}.md": f"# L1 Summary\n\n{l1_match.group(1).strip()}",
+                            f".flash-2-{prefix}-{path.name}.md": f"# L2 Lesser-Synthesis\n\n{l2_match.group(1).strip()}"
+                        }
+                    }
+                else:
+                    raise json.JSONDecodeError("No JSON object could be decoded and Fallback Regex failed.", wisp_response_str, 0)
+                
+            if ".metadata" in wisp_json:
+                import yaml as wisp_yaml
+                try:
+                    wisp_meta = wisp_yaml.safe_load(wisp_json[".metadata"])
+                    if isinstance(wisp_meta, dict) and "ontology_types" in wisp_meta:
+                        with open(metadata_file, 'r', encoding='utf-8') as f:
+                            meta_data = wisp_yaml.safe_load(f) or {}
+                        existing_types = meta_data.get("ontology_types", [])
+                        if not isinstance(existing_types, list):
+                            existing_types = []
+                        new_types = wisp_meta["ontology_types"]
+                        if isinstance(new_types, list):
+                            # Merge and deduplicate
+                            meta_data["ontology_types"] = list(set(existing_types + new_types))
+                            with open(metadata_file, 'w', encoding='utf-8') as f:
+                                f.write("---\n")
+                                wisp_yaml.dump(meta_data, f, default_flow_style=False)
+                except Exception as e:
+                    print(f"  -> Failed to parse Wisp synapses: {e}")
+                del wisp_json[".metadata"]
+                
+            if "files" in wisp_json and isinstance(wisp_json["files"], dict):
+                for flash_filename, content in wisp_json["files"].items():
+                    out_path = bm_dir / flash_filename
+                    with open(out_path, "w", encoding="utf-8") as f:
+                        f.write(content)
+            else:
+                # Fallback if Wisp outputted flat JSON
+                for k, v in wisp_json.items():
+                    if k.startswith(".flash-"):
+                        out_path = bm_dir / k
+                        with open(out_path, "w", encoding="utf-8") as f:
+                            f.write(v)
+
             print(f"[{path.name}] Mutation Complete! BMFs saturated.")
         except json.JSONDecodeError as e:
             print(f"  -> Wisp failed to return valid JSON. Error: {e}")

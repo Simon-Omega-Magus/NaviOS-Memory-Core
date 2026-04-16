@@ -55,8 +55,7 @@ Before you read, edit, or interact with a raw L3 file, you must follow this stri
    * Update the `last_updated` timestamp.
    * Increment the `edit_count` (or initialize it to 1).
    * Ensure `date_created` (oldest version date) remains intact.
-   * Actively inject or update **Faerie-Specific Synapses** assigning 0-100 categorical weights (e.g., `Navi-Cortical: {"other_file.md": 85}`) based on your unique context. 
-   * *(Do NOT manually alter global semantic weights like 'Architectural' or 'Lore'; these are managed asynchronously by the GNN/JEPA pipeline).*
+   * Actively inject missing **Ontology Types** (e.g., adding `Faerie_Neri`, `Architectural`, or `Protocol` to the `ontology_types` array) if you notice the Wisp missed them or if the file is highly relevant to your role. Wisps do a baseline pass, but Faeries must organically enrich the taxonomy.
 
 *You have full authority to scale your inference by spawning multiple Wisp subagents simultaneously, allowing them to do the heavy reading while you conserve your main context.*
 
