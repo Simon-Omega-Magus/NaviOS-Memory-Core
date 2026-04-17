@@ -10,7 +10,7 @@ import shutil
 import uuid
 from pathlib import Path
 
-BRAIN_MATTER_ROOT = Path(os.environ.get("NAVIOS_CORE_ROOT", ".")) / "Brain-Matter"
+BRAIN_MATTER_ROOT = Path(os.environ.get("NAVIOS_CORE_ROOT", ".")) / "STATE/Brain-Matter"
 UNPACKER_SCRIPT = Path(__file__).parent / "wmf_unpacker.py"
 
 def get_file_hash(filepath):
@@ -166,7 +166,7 @@ def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False
     env["GEMINI_CLI_HOME"] = wisp_home
 
     wisp_path = Path(__file__).parent.parent / "prompts" / wisp_name
-    model_arg = "gemini-3.1-flash-lite-preview" if is_lite else "gemini-3-flash-preview"
+    model_arg = "gemini-3.1-flash-lite-preview" # Forcing lite preview because standard 3.0 flash exhausted its daily API quota
     wisp_cmd = [
         "gemini", "-p", f"@{wisp_path} {prompt_text}",
         "-m", model_arg,
@@ -219,13 +219,24 @@ def mutate_target(filepath, faerie_name=None, new_links=None, is_recursive=False
                     if isinstance(wisp_meta, dict) and "ontology_types" in wisp_meta:
                         with open(metadata_file, 'r', encoding='utf-8') as f:
                             meta_data = wisp_yaml.safe_load(f) or {}
-                        existing_types = meta_data.get("ontology_types", [])
-                        if not isinstance(existing_types, list):
-                            existing_types = []
+                        
+                        existing_types = meta_data.get("ontology_types", {})
+                        if isinstance(existing_types, list):
+                            # Convert legacy list to dict with 1.0 weights
+                            existing_types = {k: 1.0 for k in existing_types}
+                        elif not isinstance(existing_types, dict):
+                            existing_types = {}
+                            
                         new_types = wisp_meta["ontology_types"]
-                        if isinstance(new_types, list):
-                            # Merge and deduplicate
-                            meta_data["ontology_types"] = list(set(existing_types + new_types))
+                        if isinstance(new_types, dict):
+                            # Merge dictionaries, taking max weight if collision
+                            for k, v in new_types.items():
+                                try:
+                                    weight = float(v)
+                                    existing_types[k] = max(existing_types.get(k, 0.0), weight)
+                                except (ValueError, TypeError):
+                                    pass
+                            meta_data["ontology_types"] = existing_types
                             with open(metadata_file, 'w', encoding='utf-8') as f:
                                 f.write("---\n")
                                 wisp_yaml.dump(meta_data, f, default_flow_style=False)

@@ -57,8 +57,9 @@ The wrapper script invoking you will provide the target `[dirname]` to use in yo
 
 ## 3. Formatting & Synapses
 *   Never use colons (`:`) in the JSON keys/filenames. Use hyphens (`-`) or periods (`.`).
-*   **Ontology Types:** You MUST include a `.metadata` key containing a raw YAML string. This YAML must define `ontology_types:` as a list of 2-5 categorical tags classifying the file's nature and domain.
+*   **Fuzzy Ontology Types:** You MUST include a `.metadata` key containing a raw YAML string. This YAML must define `ontology_types:` as a dictionary mapping 2-5 categorical tags to a float weight between 0.0 and 1.0, representing how strongly the file aligns with that category.
     *   **Valid Types include (but are not limited to):** Architectural, Protocol, Process, Tooling, Lexicon, Endocrine, Memory_Substrate, Faerie_Navi, Faerie_Neri, Pixie_Work, Core_Alignment.
+    *   *Example:* `ontology_types:\n  Architectural: 0.9\n  Protocol: 0.3`
 *   Ensure all strings in the JSON are properly escaped.
 *   Do not include Thoughts (`.t`) or Composite Thoughts (`.ct`).
 *   Output absolutely nothing except the JSON payload.

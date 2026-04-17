@@ -192,8 +192,7 @@ def main():
 
         # Ontology Types (Categorical Node Features)
         ontology_types = data.get('ontology_types', [])
-        if isinstance(ontology_types, list):
-            parsed_data[nfid]['ontology_types'] = ontology_types
+        # Node features are implicitly saved inside the metadata_json of the SQLite table
 
         # Hard link siblings
         for sibling in data.get('hard_link_siblings', []):
@@ -215,11 +214,36 @@ def main():
     for domain, nfids in nodes_by_domain.items():
         if len(nfids) < 2: continue
         for i, nfid1 in enumerate(nfids):
-            for nfid2 in nfids[i+1:]:
+            for nfid2 in nfids[i+1:i+10]: # Cap at 10 to avoid O(N^2) explosion
                 all_edges.append({
                     'source': nfid1, 'target': nfid2,
                     'relationship': 'domain_sibling',
                     'weight': 0.5, 'date_added': date_str
+                })
+
+    # Add Ontology Sibling edges
+    print("Weaving Ontology Sibling Edges...")
+    nodes_by_ontology = {}
+    for nfid, data, rel_path in parsed_data:
+        ont_data = data.get('ontology_types', {})
+        if isinstance(ont_data, list):
+            ont_data = {k: 1.0 for k in ont_data}
+        if isinstance(ont_data, dict):
+            for ot, weight in ont_data.items():
+                if ot and ot != "Uncategorized":
+                    nodes_by_ontology.setdefault(ot, []).append((nfid, float(weight)))
+                
+    for ot, nfid_weights in nodes_by_ontology.items():
+        if len(nfid_weights) < 2: continue
+        for i, (nfid1, w1) in enumerate(nfid_weights):
+            # Limit edges to nearest 5 siblings per ontology to keep graph sparse
+            for nfid2, w2 in nfid_weights[i+1:i+6]:
+                # Combine the weights multiplicatively or averaged. Let's use average.
+                combined_weight = (w1 + w2) / 2.0
+                all_edges.append({
+                    'source': nfid1, 'target': nfid2,
+                    'relationship': f'shared_ontology',
+                    'weight': combined_weight, 'date_added': date_str
                 })
 
     print(f"Inserting {len(all_edges)} edges...")

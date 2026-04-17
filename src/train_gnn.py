@@ -39,7 +39,7 @@ def load_graph_from_sqlite(db_path):
 
     return nodes, edges
 
-def encode_nodes(nodes):
+def encode_nodes(nodes, db_path):
     """Convert node attributes to numerical feature vectors."""
     nfids = [n[0] for n in nodes]
     nfid_to_idx = {nfid: i for i, nfid in enumerate(nfids)}
@@ -48,16 +48,47 @@ def encode_nodes(nodes):
     type_encoder = LabelEncoder()
     file_types = [n[1] or 'unknown' for n in nodes]
     type_encoded = type_encoder.fit_transform(file_types)
+    
+    # We can also add ontology_types if we extract them from the nodes table.
+    # Currently, train_gnn.py only SELECTs nfid, file_type, confidence, has_l0_abstract, has_l1_overview, l0_filepath.
+    # To truly use ontology_types, we should fetch metadata_json and parse it.
+    
+    # Load metadata_json for ontology types
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+    c.execute("SELECT nfid, metadata_json FROM nodes")
+    meta_rows = c.fetchall()
+    conn.close()
+    
+    ontology_vocab = set()
+    node_ontologies = {}
+    for nfid, m_json in meta_rows:
+        try:
+            m_dict = json.loads(m_json)
+            ont_types = m_dict.get("ontology_types", {})
+            if isinstance(ont_types, list):
+                ont_types = {k: 1.0 for k in ont_types}
+            if isinstance(ont_types, dict):
+                node_ontologies[nfid] = ont_types
+                for ot in ont_types.keys():
+                    ontology_vocab.add(ot)
+        except Exception:
+            node_ontologies[nfid] = []
+            
+    ontology_list = sorted(list(ontology_vocab))
+    ont_to_idx = {ot: i for i, ot in enumerate(ontology_list)}
+    num_ont_features = len(ontology_list)
+    print(f"  Extracted {num_ont_features} unique ontology types.")
 
     # Initialize SentenceTransformer (lazy load to save memory/time if not needed)
+    use_semantics = False
     try:
         from sentence_transformers import SentenceTransformer
-        print("  Loading SentenceTransformer (all-MiniLM-L6-v2) for semantic embeddings...")
-        embedder = SentenceTransformer('all-MiniLM-L6-v2')
-        use_semantics = True
+        # print("  Loading SentenceTransformer (all-MiniLM-L6-v2) for semantic embeddings...")
+        # embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        # use_semantics = True
     except ImportError:
         print("  WARNING: sentence-transformers not installed. Falling back to structural-only features.")
-        use_semantics = False
 
     # Build feature matrix
     features = []
@@ -81,6 +112,7 @@ def encode_nodes(nodes):
         text_embeddings = embedder.encode(texts_to_embed, convert_to_tensor=False)
 
     for i, node in enumerate(nodes):
+        nfid = node[0]
         # Base structural features: [type_encoded, confidence, has_l0, has_l1]
         feat = [
             float(type_encoded[i]) / len(type_encoder.classes_),  # normalized type
@@ -88,6 +120,17 @@ def encode_nodes(nodes):
             float(node[3] or 0),      # has_l0_abstract
             float(node[4] or 0),      # has_l1_overview
         ]
+        
+        # Ontology Fuzzy Vector (Continuous Node Features)
+        ont_vector = [0.0] * num_ont_features
+        ont_data = node_ontologies.get(nfid, {})
+        for ot, weight in ont_data.items():
+            if ot in ont_to_idx:
+                try:
+                    ont_vector[ont_to_idx[ot]] = float(weight)
+                except (ValueError, TypeError):
+                    ont_vector[ont_to_idx[ot]] = 1.0
+        feat.extend(ont_vector)
         
         # Inject semantic embedding (e.g., 384 dimensions)
         if use_semantics and text_embeddings is not None:
@@ -196,7 +239,7 @@ def main():
         print("ERROR: Not enough nodes to train a meaningful GNN. Populate more metadata files first.")
         return
 
-    x, filepath_to_idx, type_encoder, filepaths = encode_nodes(nodes)
+    x, filepath_to_idx, type_encoder, filepaths = encode_nodes(nodes, args.db)
     edge_index = encode_edges(edges, filepath_to_idx)
 
     data = Data(x=x, edge_index=edge_index)
