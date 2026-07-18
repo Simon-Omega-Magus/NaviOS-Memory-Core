@@ -144,6 +144,7 @@ See [Build Week development record](docs/BUILD_WEEK_2026.md) for the distinction
 - [Architecture visual](media/navios-memory-reflex-architecture.png)
 - [Deterministic proof visual](media/navios-memory-reflex-proof.png)
 - [Under-three-minute video script](docs/DEMO_VIDEO_SCRIPT.md)
+- [YouTube title, description, timestamps, and upload settings](docs/YOUTUBE_UPLOAD.md)
 
 The optional `media/render-demo-video.sh` script produces a complete narrated
 fallback video when `ffmpeg`, `ffprobe`, and `espeak-ng` are installed.
