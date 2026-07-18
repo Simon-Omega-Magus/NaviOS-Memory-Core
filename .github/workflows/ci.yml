@@ -25,10 +25,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Compile sources
-        run: python -m compileall -q plugins/navios-memory-reflex demo tests
+        run: python -m compileall -q plugins/navios-memory-reflex demo benchmarks tests
 
       - name: Run focused tests
-        run: python -m unittest -v tests/test_memory_reflex.py
+        run: >-
+          python -m unittest -v
+          tests/test_memory_reflex.py
+          tests/test_staged_benchmark.py
 
       - name: Run deterministic demo
         run: python demo/run_demo.py --json > /tmp/navios-memory-reflex-demo.json
+
+      - name: Run deterministic scale benchmark
+        run: >-
+          python benchmarks/run_staged_retrieval_benchmark.py --json
+          > /tmp/navios-memory-reflex-benchmark.json

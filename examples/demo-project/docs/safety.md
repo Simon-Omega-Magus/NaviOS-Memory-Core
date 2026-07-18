@@ -7,4 +7,7 @@ Source memory and recovery state remain local; the default engine does not call 
 
 Files whose names suggest tokens, credentials, private keys, environments, or secrets are excluded before indexing.
 
-Retrieved cells are evidence rather than execution authority, and consequential work must verify their exact source handles.
+Retrieval preserves the authority of its source but never creates execution
+permission. Stable human directions remain influential until completed,
+expired, revoked, or clearly superseded, while consequential work must still
+verify exact source handles and current action authority.

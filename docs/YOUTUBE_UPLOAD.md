@@ -10,9 +10,11 @@ NaviOS Memory Reflex: Local-First Memory and Safe Compaction Recovery for Codex
 
 ```text
 NaviOS Memory Reflex is a local-first Codex plugin that turns selected project
-notes into provenance-addressed cells, retrieves bounded evidence through typed
-graph relations, abstains on unsupported queries, and restores an authoritative
-checkpoint after context compaction.
+notes into provenance-addressed cells, surveys graph-linked evidence without
+loading every body, hydrates only selected current revisions, abstains on
+unsupported queries, and restores an authoritative checkpoint after context
+compaction. It also provides proposal cultivation and a source-bound,
+no-execution human-question queue.
 
 OpenAI Build Week 2026 entry built with GPT-5.6 in Codex.
 
@@ -22,18 +24,19 @@ https://github.com/Simon-Omega-Magus/NaviOS-Memory-Core/tree/build-week-2026-mem
 Run the deterministic demo:
 python3 demo/run_demo.py
 
-Run the 18 focused tests:
-python3 -m unittest -q tests/test_memory_reflex.py
+Run the 45 focused tests:
+python3 -m unittest -q tests/test_memory_reflex.py tests/test_staged_benchmark.py
 
 The default engine uses local Python and SQLite, requires no API key, preserves
 exact source handles, and does not claim to be an infinite context window.
 
 00:00 The context-compaction problem
-00:23 Provenance cells and typed graph retrieval
-00:46 Deterministic triangulation demo
-01:18 Digest-locked compaction recovery
-01:57 Safety boundaries and focused tests
-02:20 How Codex and GPT-5.6 were used
+00:18 Body-free survey and selective hydration
+00:43 Deterministic demo and scale measurement
+01:05 Proposal cultivation and persistent human direction
+01:27 Digest-locked compaction recovery
+01:52 Safety boundaries and 45 focused tests
+02:17 How Codex and GPT-5.6 were used
 02:41 Repository and next steps
 ```
 

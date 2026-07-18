@@ -21,9 +21,9 @@ images=(
   "$ROOT/media/navios-memory-reflex-thumbnail.png"
   "$ROOT/media/navios-memory-reflex-architecture.png"
   "$ROOT/media/navios-memory-reflex-proof.png"
+  "$ROOT/media/navios-memory-reflex-proof.png"
   "$ROOT/media/navios-memory-reflex-architecture.png"
   "$ROOT/media/navios-memory-reflex-proof.png"
-  "$ROOT/media/navios-memory-reflex-thumbnail.png"
   "$BUILD/closing.png"
 )
 

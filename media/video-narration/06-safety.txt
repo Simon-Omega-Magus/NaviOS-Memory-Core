@@ -1,0 +1,1 @@
+The release is local-first Python and SQLite. Raw prompts are represented in saved state only by a digest. Source changes, symbolic links, hardlink policy, suspicious filenames, context limits, queue tampering, and hook ordering all fail closed. Forty-five focused tests pass without an A P I key.

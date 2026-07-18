@@ -1,0 +1,1 @@
+Before compaction, NaviOS freezes the accepted checkpoint and last evidence packet into a digest-locked bundle. Session Start or the next prompt restores it. If hook delivery arrives out of order, the first tool call is denied, receives the bundle, and must be reviewed and reissued.

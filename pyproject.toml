@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "navios-memory-reflex"
-version = "0.1.0"
-description = "Local-first prompt memory retrieval and compaction recovery for Codex"
+version = "0.2.0"
+description = "Local-first staged graph memory and compaction recovery for Codex"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}

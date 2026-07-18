@@ -18,11 +18,15 @@ from pathlib import Path
 from typing import Any, Iterable, Iterator, Sequence
 
 
-INDEX_SCHEMA = "navios-memory-index-v1"
+INDEX_SCHEMA = "navios-memory-index-v2"
 PACKET_SCHEMA = "navios-memory-context-packet-v1"
+ASSIMILATION_SCHEMA = "navios-memory-assimilation-v1"
 DEFAULT_DB = Path(".navios/memory.sqlite3")
 DEFAULT_CONFIG = Path(".navios/config.json")
 DEFAULT_CHECKPOINT = Path(".navios/checkpoint.md")
+DEFAULT_RELATIONSHIPS = Path(".navios/relationships.json")
+DEFAULT_PROPOSALS = Path(".navios/cells/proposals")
+RELATIONSHIPS_SCHEMA = "navios-memory-relationships-v1"
 SUPPORTED_SUFFIXES = {
     ".md",
     ".txt",
@@ -85,8 +89,27 @@ STOPWORDS = {
 }
 WORD_RE = re.compile(r"[a-z0-9][a-z0-9_./:-]*", re.IGNORECASE)
 FRONTMATTER_LIST_RE = re.compile(r"^\s*(tags|links)\s*:\s*\[(.*)]\s*$", re.IGNORECASE)
+FRONTMATTER_SCALAR_RE = re.compile(
+    r"^\s*([a-z0-9_-]+)\s*:\s*([^\r\n]*)$", re.IGNORECASE
+)
 MARKDOWN_LINK_RE = re.compile(r"\[[^]]*]\(([^)]+)\)")
 WIKILINK_RE = re.compile(r"\[\[([^]|#]+)")
+RELATION_RE = re.compile(r"[a-z0-9][a-z0-9_.:-]{0,63}", re.IGNORECASE)
+MEMORY_METADATA_KEYS = {
+    "authority",
+    "confidence",
+    "created_at",
+    "created_by",
+    "currentness",
+    "expires_at",
+    "kind",
+    "origin",
+    "proposal_id",
+    "schema",
+    "scope",
+    "status",
+    "valid_from",
+}
 
 
 class MemoryError(RuntimeError):
@@ -113,6 +136,10 @@ def utc_now() -> str:
 
 def sha256_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
 
 
 def sha256_file(path: Path) -> str:
@@ -154,29 +181,36 @@ def default_config() -> dict[str, Any]:
             "**/*token*",
         ],
         "max_file_bytes": 524288,
+        "allow_hardlinked_sources": False,
+        "relationship_overlay": DEFAULT_RELATIONSHIPS.as_posix(),
         "retrieval": {
             "top_k": 8,
             "graph_hops": 2,
             "max_context_chars": 7000,
             "minimum_score": 0.05,
+            "survey_candidates_per_query": 200,
         },
     }
 
 
 def initialize_project(root: Path) -> list[Path]:
     root = root.resolve()
-    navios = root / ".navios"
+    navios = project_output_path(root, Path(".navios"), field="memory directory")
     navios.mkdir(parents=True, exist_ok=True)
+    if not navios.is_dir() or has_symlink_component(root, navios):
+        raise MemoryError(f"memory directory must be an in-project directory: {navios}")
     os.chmod(navios, 0o700)
     created: list[Path] = []
-    config_path = root / DEFAULT_CONFIG
+    config_path = project_output_path(root, DEFAULT_CONFIG, field="memory config")
     if not config_path.exists():
         config_path.write_text(
             json.dumps(default_config(), indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
         created.append(config_path)
-    checkpoint_path = root / DEFAULT_CHECKPOINT
+    checkpoint_path = project_output_path(
+        root, DEFAULT_CHECKPOINT, field="memory checkpoint"
+    )
     if not checkpoint_path.exists():
         checkpoint_path.write_text(
             "# Authoritative Checkpoint\n\n"
@@ -187,7 +221,23 @@ def initialize_project(root: Path) -> list[Path]:
             encoding="utf-8",
         )
         created.append(checkpoint_path)
-    ignore_path = root / ".naviosignore"
+    relationships_path = project_output_path(
+        root, DEFAULT_RELATIONSHIPS, field="relationship overlay"
+    )
+    if not relationships_path.exists():
+        relationships_path.write_text(
+            json.dumps(
+                {"schema": RELATIONSHIPS_SCHEMA, "relations": []},
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        created.append(relationships_path)
+    ignore_path = project_output_path(
+        root, Path(".naviosignore"), field="memory ignore file"
+    )
     if not ignore_path.exists():
         ignore_path.write_text(
             ".git/**\n.navios/memory.sqlite3\n**/.env*\n"
@@ -202,6 +252,7 @@ def load_config(root: Path) -> dict[str, Any]:
     path = root / DEFAULT_CONFIG
     if not path.exists():
         return default_config()
+    require_unaliased_control_file(root, path, field="config")
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -215,6 +266,9 @@ def load_ignore_patterns(root: Path, config: dict[str, Any]) -> list[str]:
     patterns = [str(item) for item in config.get("exclude", [])]
     ignore_path = root / ".naviosignore"
     if ignore_path.is_file():
+        require_unaliased_control_file(
+            root, ignore_path, field="ignore configuration"
+        )
         for line in ignore_path.read_text(encoding="utf-8").splitlines():
             value = line.strip()
             if value and not value.startswith("#"):
@@ -255,10 +309,70 @@ def has_symlink_component(root: Path, path: Path) -> bool:
     return False
 
 
+def require_unaliased_control_file(root: Path, path: Path, *, field: str) -> None:
+    """Reject mutable control files reachable through symlinks or hardlinks."""
+    if not path.is_file() or has_symlink_component(root, path):
+        raise MemoryError(f"{field} must be a regular in-project file: {path}")
+    try:
+        links = path.stat().st_nlink
+    except OSError as exc:
+        raise MemoryError(f"cannot inspect {field}: {path}: {exc}") from exc
+    if links != 1:
+        raise MemoryError(f"{field} must not have hardlink aliases: {path}")
+
+
+def project_output_path(root: Path, raw: Path, *, field: str) -> Path:
+    """Return a lexically in-project output path without following symlinks."""
+    root = root.resolve()
+    candidate = raw.expanduser()
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    candidate = Path(os.path.abspath(candidate))
+    try:
+        relative = candidate.relative_to(root)
+    except ValueError as exc:
+        raise MemoryError(f"{field} must stay inside the project: {raw}") from exc
+    if relative == Path("."):
+        raise MemoryError(f"{field} must not replace the project root")
+    if has_symlink_component(root, candidate):
+        raise MemoryError(f"{field} contains a symlink component: {candidate}")
+    return candidate
+
+
+def verify_indexed_source(
+    root: Path,
+    relative_path: str,
+    expected_sha256: str,
+    *,
+    allow_hardlinks: bool,
+) -> Path:
+    """Fail closed unless an indexed source still matches its exact byte revision."""
+    relative = _project_relative_path(root, relative_path, field="indexed source path")
+    source = root / relative
+    try:
+        matches = (
+            source.is_file()
+            and not has_symlink_component(root, source)
+            and (allow_hardlinks or source.stat().st_nlink == 1)
+            and sha256_file(source) == expected_sha256
+        )
+    except (OSError, ValueError) as exc:
+        raise MemoryError(
+            f"cannot verify indexed source path: {relative_path}: {exc}"
+        ) from exc
+    if not matches:
+        raise MemoryError(
+            "source changed or became unavailable since indexing: "
+            f"{relative_path}; run navios-memory assimilate again"
+        )
+    return source
+
+
 def iter_source_files(root: Path, config: dict[str, Any]) -> Iterator[Path]:
     includes = [str(item) for item in config.get("include", ["**/*.md"])]
     excludes = load_ignore_patterns(root, config)
     max_bytes = int(config.get("max_file_bytes", 524288))
+    allow_hardlinks = bool(config.get("allow_hardlinked_sources", False))
     for path in sorted(root.rglob("*")):
         if not path.is_file() or has_symlink_component(root, path):
             continue
@@ -271,7 +385,10 @@ def iter_source_files(root: Path, config: dict[str, Any]) -> Iterator[Path]:
             continue
         if path_matches(relative, excludes) or is_protected_path(relative):
             continue
-        if path.stat().st_size > max_bytes:
+        stat = path.stat()
+        if stat.st_size > max_bytes:
+            continue
+        if stat.st_nlink > 1 and not allow_hardlinks:
             continue
         yield path
 
@@ -297,6 +414,50 @@ def parse_frontmatter(lines: Sequence[str]) -> tuple[list[str], list[str]]:
         else:
             links.extend(values)
     return sorted(set(tags)), sorted(set(links))
+
+
+def parse_memory_metadata(lines: Sequence[str], relative_path: str) -> dict[str, Any]:
+    metadata: dict[str, Any] = {
+        "origin": "unclassified",
+        "authority": "evidence",
+        "status": "unclassified",
+        "kind": "source",
+        "classification": "default-unclassified",
+    }
+    if lines and lines[0].strip() == "---":
+        declared: dict[str, Any] = {}
+        for line in lines[1:80]:
+            if line.strip() == "---":
+                break
+            match = FRONTMATTER_SCALAR_RE.match(line)
+            if not match:
+                continue
+            key = match.group(1).casefold()
+            if key not in MEMORY_METADATA_KEYS or key in {"tags", "links"}:
+                continue
+            raw = match.group(2).strip()
+            if len(raw) > 256:
+                continue
+            try:
+                value = json.loads(raw)
+            except json.JSONDecodeError:
+                value = raw.strip("'\"")
+            if isinstance(value, (str, int, float, bool)) or value is None:
+                declared[key] = value
+        if declared:
+            metadata.update(declared)
+            metadata["classification"] = "source-declared-unverified"
+    proposal_prefix = DEFAULT_PROPOSALS.as_posix() + "/"
+    if relative_path.startswith(proposal_prefix):
+        metadata.update(
+            {
+                "origin": "agent-derived",
+                "authority": "evidence-only",
+                "status": "proposed",
+                "classification": "proposal-path-enforced",
+            }
+        )
+    return metadata
 
 
 def extract_links(text: str, frontmatter_links: Sequence[str]) -> list[str]:
@@ -383,6 +544,95 @@ def connect(
     edges[key] = max(edges.get(key, 0.0), weight)
 
 
+def _project_relative_path(root: Path, raw: Any, *, field: str) -> str:
+    if not isinstance(raw, str) or not raw.strip():
+        raise MemoryError(f"{field} must be a non-empty relative path")
+    candidate = Path(raw.strip())
+    if candidate.is_absolute() or ".." in candidate.parts:
+        raise MemoryError(f"{field} must stay inside the project: {raw!r}")
+    normalized = Path(os.path.normpath(candidate.as_posix()))
+    if normalized == Path(".") or ".." in normalized.parts:
+        raise MemoryError(f"{field} must identify a project file: {raw!r}")
+    return normalized.as_posix()
+
+
+def load_relationship_overlay(
+    root: Path,
+    config: dict[str, Any],
+    document_by_path: dict[str, dict[str, Any]],
+) -> tuple[list[dict[str, Any]], str | None]:
+    raw_overlay = config.get(
+        "relationship_overlay", DEFAULT_RELATIONSHIPS.as_posix()
+    )
+    relative_overlay = _project_relative_path(
+        root, raw_overlay, field="relationship_overlay"
+    )
+    overlay_path = root / relative_overlay
+    if not overlay_path.exists():
+        return [], None
+    require_unaliased_control_file(
+        root, overlay_path, field="relationship overlay"
+    )
+    try:
+        value = json.loads(overlay_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise MemoryError(f"invalid relationship overlay {overlay_path}: {exc}") from exc
+    if not isinstance(value, dict) or value.get("schema") != RELATIONSHIPS_SCHEMA:
+        raise MemoryError(
+            f"unsupported relationship overlay schema: {overlay_path}"
+        )
+    raw_relations = value.get("relations")
+    if not isinstance(raw_relations, list):
+        raise MemoryError(f"relationship overlay relations must be a list: {overlay_path}")
+
+    relations: list[dict[str, Any]] = []
+    for index, raw_relation in enumerate(raw_relations):
+        if not isinstance(raw_relation, dict):
+            raise MemoryError(f"relationship {index} must be an object")
+        source = _project_relative_path(
+            root, raw_relation.get("source"), field=f"relationship {index} source"
+        )
+        target = _project_relative_path(
+            root, raw_relation.get("target"), field=f"relationship {index} target"
+        )
+        relation = raw_relation.get("relation")
+        if not isinstance(relation, str) or not RELATION_RE.fullmatch(relation):
+            raise MemoryError(
+                f"relationship {index} relation must match {RELATION_RE.pattern}"
+            )
+        weight = raw_relation.get("weight", 1.0)
+        if isinstance(weight, bool) or not isinstance(weight, (int, float)):
+            raise MemoryError(f"relationship {index} weight must be numeric")
+        normalized_weight = float(weight)
+        if not math.isfinite(normalized_weight) or not 0 < normalized_weight <= 1:
+            raise MemoryError(
+                f"relationship {index} weight must be greater than 0 and at most 1"
+            )
+        if source not in document_by_path or target not in document_by_path:
+            missing = source if source not in document_by_path else target
+            raise MemoryError(
+                f"relationship {index} references an unindexed exact path: {missing}"
+            )
+        relations.append(
+            {
+                "source": source,
+                "target": target,
+                "relation": relation.casefold(),
+                "weight": normalized_weight,
+            }
+        )
+    relations.sort(
+        key=lambda item: (
+            item["source"],
+            item["target"],
+            item["relation"],
+            item["weight"],
+        )
+    )
+    canonical = json.dumps(relations, separators=(",", ":"), sort_keys=True)
+    return relations, sha256_text(canonical)
+
+
 def create_schema(connection: sqlite3.Connection) -> None:
     connection.executescript(
         """
@@ -394,7 +644,8 @@ def create_schema(connection: sqlite3.Connection) -> None:
             title TEXT NOT NULL,
             content_sha256 TEXT NOT NULL,
             tags_json TEXT NOT NULL,
-            links_json TEXT NOT NULL
+            links_json TEXT NOT NULL,
+            memory_metadata_json TEXT NOT NULL
         );
         CREATE TABLE cells (
             cell_id TEXT PRIMARY KEY,
@@ -426,18 +677,23 @@ def create_schema(connection: sqlite3.Connection) -> None:
 def index_project(root: Path, db_path: Path | None = None) -> dict[str, Any]:
     root = root.resolve()
     config = load_config(root)
-    destination = (db_path or (root / DEFAULT_DB)).resolve()
+    destination = project_output_path(
+        root, db_path or DEFAULT_DB, field="memory index"
+    )
     destination.parent.mkdir(parents=True, exist_ok=True)
+    if has_symlink_component(root, destination):
+        raise MemoryError(f"memory index contains a symlink component: {destination}")
     os.chmod(destination.parent, 0o700)
     documents: list[dict[str, Any]] = []
     all_cells: list[Cell] = []
     for path in iter_source_files(root, config):
         relative = path.relative_to(root).as_posix()
         try:
-            text = path.read_text(encoding="utf-8")
+            raw_content = path.read_bytes()
+            text = raw_content.decode("utf-8")
         except UnicodeDecodeError:
             continue
-        content_sha = sha256_text(text)
+        content_sha = sha256_bytes(raw_content)
         document_id = sha256_text(relative)
         lines = text.splitlines()
         tags, frontmatter_links = parse_frontmatter(lines)
@@ -456,6 +712,7 @@ def index_project(root: Path, db_path: Path | None = None) -> dict[str, Any]:
                 "content_sha256": content_sha,
                 "tags": tags,
                 "links": extract_links(text, frontmatter_links),
+                "memory_metadata": parse_memory_metadata(lines, relative),
                 "cells": cells,
             }
         )
@@ -463,6 +720,9 @@ def index_project(root: Path, db_path: Path | None = None) -> dict[str, Any]:
 
     edges: dict[tuple[str, str, str], float] = {}
     document_by_path = {item["path"]: item for item in documents}
+    overlay_relations, overlay_digest = load_relationship_overlay(
+        root, config, document_by_path
+    )
     basename_paths: dict[str, list[str]] = defaultdict(list)
     tags_to_documents: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for document in documents:
@@ -503,11 +763,23 @@ def index_project(root: Path, db_path: Path | None = None) -> dict[str, Any]:
             connect(edges, left_cell, right_cell, "shared-tag", 0.72)
             connect(edges, right_cell, left_cell, "shared-tag", 0.72)
 
+    for overlay in overlay_relations:
+        source = document_by_path[overlay["source"]]["cells"][0].cell_id
+        target = document_by_path[overlay["target"]]["cells"][0].cell_id
+        connect(
+            edges,
+            source,
+            target,
+            f"overlay:{overlay['relation']}",
+            overlay["weight"],
+        )
+
     descriptor, temp_name = tempfile.mkstemp(
         prefix=".memory.", suffix=".sqlite3", dir=destination.parent
     )
     os.close(descriptor)
     temp_path = Path(temp_name)
+    connection: sqlite3.Connection | None = None
     try:
         connection = sqlite3.connect(temp_path)
         create_schema(connection)
@@ -516,6 +788,7 @@ def index_project(root: Path, db_path: Path | None = None) -> dict[str, Any]:
             "\n".join(
                 f"{item['path']}:{item['content_sha256']}" for item in documents
             )
+            + f"\noverlay:{overlay_digest or 'none'}"
         )
         connection.executemany(
             "INSERT INTO meta(key, value) VALUES (?, ?)",
@@ -524,11 +797,13 @@ def index_project(root: Path, db_path: Path | None = None) -> dict[str, Any]:
                 ("indexed_at", indexed_at),
                 ("project_root", str(root)),
                 ("index_digest", index_digest),
+                ("relationship_overlay_sha256", overlay_digest or "none"),
+                ("relationship_count", str(len(overlay_relations))),
             ],
         )
         for document in documents:
             connection.execute(
-                "INSERT INTO documents VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO documents VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
                     document["document_id"],
                     document["path"],
@@ -536,6 +811,11 @@ def index_project(root: Path, db_path: Path | None = None) -> dict[str, Any]:
                     document["content_sha256"],
                     json.dumps(document["tags"], separators=(",", ":")),
                     json.dumps(document["links"], separators=(",", ":")),
+                    json.dumps(
+                        document["memory_metadata"],
+                        separators=(",", ":"),
+                        sort_keys=True,
+                    ),
                 ),
             )
         connection.executemany(
@@ -563,9 +843,12 @@ def index_project(root: Path, db_path: Path | None = None) -> dict[str, Any]:
         )
         connection.commit()
         connection.close()
+        connection = None
         os.chmod(temp_path, 0o600)
         os.replace(temp_path, destination)
     finally:
+        if connection is not None:
+            connection.close()
         if temp_path.exists():
             temp_path.unlink()
     return {
@@ -575,23 +858,56 @@ def index_project(root: Path, db_path: Path | None = None) -> dict[str, Any]:
         "documents": len(documents),
         "cells": len(all_cells),
         "edges": len(edges),
+        "overlay_relations": len(overlay_relations),
+        "source_mode": "read-only",
         "index_digest": index_digest,
         "indexed_at": indexed_at,
+    }
+
+
+def assimilate_project(root: Path) -> dict[str, Any]:
+    """Derive a replaceable cell graph from ordinary files without editing them."""
+    root = root.resolve()
+    created = initialize_project(root)
+    report = index_project(root)
+    return {
+        "schema": ASSIMILATION_SCHEMA,
+        "project_root": str(root),
+        "created": [path.relative_to(root).as_posix() for path in created],
+        "source_mode": "read-only",
+        "source_documents_mutated": 0,
+        "index": report,
     }
 
 
 def open_index(db_path: Path) -> sqlite3.Connection:
     if not db_path.is_file():
         raise MemoryError(f"memory index not found: {db_path}; run index first")
-    connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-    connection.row_factory = sqlite3.Row
-    schema_row = connection.execute(
-        "SELECT value FROM meta WHERE key = 'schema'"
-    ).fetchone()
+    connection: sqlite3.Connection | None = None
+    try:
+        connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        connection.row_factory = sqlite3.Row
+        schema_row = connection.execute(
+            "SELECT value FROM meta WHERE key = 'schema'"
+        ).fetchone()
+    except sqlite3.DatabaseError as exc:
+        if connection is not None:
+            connection.close()
+        raise MemoryError(f"invalid memory index {db_path}: {exc}") from exc
     if not schema_row or schema_row[0] != INDEX_SCHEMA:
         connection.close()
         raise MemoryError(f"unsupported memory index schema: {db_path}")
     return connection
+
+
+def decode_memory_metadata(raw: Any) -> dict[str, Any]:
+    try:
+        value = json.loads(raw)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise MemoryError("memory index contains invalid authority metadata") from exc
+    if not isinstance(value, dict):
+        raise MemoryError("memory authority metadata must be an object")
+    return value
 
 
 def _bm25_scores(
@@ -637,6 +953,9 @@ def _graph_expand(
         for cell_id in seeds
     }
     best_state = {(cell_id, 0): score for cell_id, score in seeds.items()}
+    state_paths: dict[tuple[str, int], list[dict[str, Any]]] = {
+        (cell_id, 0): [] for cell_id in seeds
+    }
     frontier = [(-score, 0, cell_id) for cell_id, score in seeds.items()]
     heapq.heapify(frontier)
     while frontier:
@@ -644,6 +963,7 @@ def _graph_expand(
         current_score = -negative_score
         if current_score < best_state.get((current, depth), 0.0):
             continue
+        current_path = state_paths.get((current, depth), [])
         if depth >= hops:
             continue
         neighbors = connection.execute(
@@ -656,8 +976,18 @@ def _graph_expand(
             next_depth = depth + 1
             propagated = current_score * float(neighbor["weight"]) * 0.55
             state = (target, next_depth)
+            candidate_path = [
+                *current_path,
+                {
+                    "from_cell_id": current,
+                    "to_cell_id": target,
+                    "relation": neighbor["relation"],
+                    "weight": float(neighbor["weight"]),
+                },
+            ]
             if propagated > best_state.get(state, 0.0):
                 best_state[state] = propagated
+                state_paths[state] = candidate_path
                 heapq.heappush(frontier, (-propagated, next_depth, target))
             if propagated > scores.get(target, 0.0):
                 scores[target] = propagated
@@ -665,6 +995,7 @@ def _graph_expand(
                     "hops": next_depth,
                     "relation": neighbor["relation"],
                     "from": current,
+                    "path": candidate_path,
                 }
     return scores, traces
 
@@ -716,11 +1047,14 @@ def query_index(
             raise MemoryError(
                 "query_labels must contain one non-empty label per cleaned query"
             )
-    database = (db_path or (root / DEFAULT_DB)).resolve()
+    database = project_output_path(root, db_path or DEFAULT_DB, field="memory index")
     connection = open_index(database)
     rows = connection.execute(
-        "SELECT cell_id, document_id, path, ordinal, start_line, end_line, "
-        "heading, kind, text, content_sha256, token_count FROM cells"
+        "SELECT c.cell_id, c.document_id, c.path, c.ordinal, c.start_line, "
+        "c.end_line, c.heading, c.kind, c.text, c.content_sha256, "
+        "c.token_count, d.content_sha256 AS document_content_sha256, "
+        "d.memory_metadata_json "
+        "FROM cells c JOIN documents d ON d.document_id = c.document_id"
     ).fetchall()
     rows_by_id = {row["cell_id"]: row for row in rows}
     index_digest = connection.execute(
@@ -788,14 +1122,28 @@ def query_index(
     packet_base = {
         "schema": PACKET_SCHEMA,
         "generated_at": utc_now(),
-            "queries": display_queries,
+        "queries": display_queries,
         "abstained": False,
         "abstention_reason": None,
         "index": {"digest": index_digest, "indexed_at": indexed_at},
         "max_context_chars": max_context_chars,
     }
+    allow_hardlinks = bool(config.get("allow_hardlinked_sources", False))
+    verified_documents: set[str] = set()
     for cell_id, score in ranked:
         row = rows_by_id[cell_id]
+        if row["path"] not in verified_documents:
+            try:
+                verify_indexed_source(
+                    root,
+                    row["path"],
+                    row["document_content_sha256"],
+                    allow_hardlinks=allow_hardlinks,
+                )
+            except Exception:
+                connection.close()
+                raise
+            verified_documents.add(row["path"])
         text = row["text"]
         trace = best_trace.get(cell_id, {})
         result = {
@@ -813,6 +1161,7 @@ def query_index(
             },
             "heading": row["heading"],
             "kind": row["kind"],
+            "memory": decode_memory_metadata(row["memory_metadata_json"]),
             "text": text,
             "graph": {
                 "hops": int(trace.get("hops", 0)),
@@ -863,6 +1212,7 @@ def _render_packet_markdown(packet: dict[str, Any]) -> str:
         return "\n".join(lines).rstrip() + "\n"
     for result in packet["results"]:
         source = result["source"]
+        memory = result.get("memory", {})
         line_range = (
             str(source["start_line"])
             if source["start_line"] == source["end_line"]
@@ -877,6 +1227,11 @@ def _render_packet_markdown(packet: dict[str, Any]) -> str:
                 f"Evidence SHA-256: `{source['content_sha256']}`  ",
                 f"Score: `{result['score']}`; graph: "
                 f"`{result['graph']['hops']}-hop/{result['graph']['relation']}`",
+                "Memory: "
+                f"`{memory.get('origin', 'unclassified')}` / "
+                f"`{memory.get('authority', 'evidence')}` / "
+                f"`{memory.get('status', 'unclassified')}`; classification: "
+                f"`{memory.get('classification', 'default-unclassified')}`",
                 "",
                 result["text"],
                 "",
@@ -896,7 +1251,8 @@ def format_packet_markdown(packet: dict[str, Any]) -> str:
 
 
 def index_status(root: Path, db_path: Path | None = None) -> dict[str, Any]:
-    database = (db_path or (root / DEFAULT_DB)).resolve()
+    root = root.resolve()
+    database = project_output_path(root, db_path or DEFAULT_DB, field="memory index")
     connection = open_index(database)
     meta = dict(connection.execute("SELECT key, value FROM meta").fetchall())
     documents = connection.execute("SELECT count(*) FROM documents").fetchone()[0]

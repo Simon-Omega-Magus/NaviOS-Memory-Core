@@ -1,7 +1,7 @@
 {
   "name": "navios-memory-reflex",
-  "version": "0.1.0",
-  "description": "Local-first prompt memory retrieval and compaction recovery for Codex.",
+  "version": "0.2.0",
+  "description": "Local-first staged graph memory and compaction recovery for Codex.",
   "author": {
     "name": "Simon Omega Magus",
     "url": "https://github.com/Simon-Omega-Magus"
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "NaviOS Memory Reflex",
     "shortDescription": "Retrieve durable local memory and recover after compaction.",
-    "longDescription": "A local-first Codex memory layer that turns project notes into provenance-addressed cells, expands retrieval through typed graph edges, and restores a frozen authoritative checkpoint after context compaction.",
+    "longDescription": "A local-first Codex memory layer that assimilates project notes into provenance-addressed cells, surveys typed graph relationships before selective hydration, cultivates evidence-only proposals, queues unresolved human-will conflicts without aging out either claim, and restores a frozen checkpoint after compaction.",
     "developerName": "Simon Omega Magus",
     "category": "Productivity",
     "capabilities": [

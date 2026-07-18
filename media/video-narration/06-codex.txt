@@ -1,1 +1,0 @@
-I used GPT-5.6 in Codex to audit an earlier Graph Sage research repository, reduce a broad memory architecture to a reproducible product, implement the plugin and tests, and investigate real hook-ordering failures. I supplied the long-term memory direction, privacy requirements, scope decisions, and final publication control.

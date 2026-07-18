@@ -2,6 +2,7 @@
   "schema": "navios-memory-config-v1",
   "include": [
     ".navios/checkpoint.md",
+    ".navios/cells/proposals/**/*.md",
     "docs/**/*.md"
   ],
   "exclude": [
@@ -13,10 +14,13 @@
     "**/*token*"
   ],
   "max_file_bytes": 524288,
+  "allow_hardlinked_sources": false,
+  "relationship_overlay": ".navios/relationships.json",
   "retrieval": {
     "top_k": 8,
     "graph_hops": 2,
     "max_context_chars": 7000,
-    "minimum_score": 0.05
+    "minimum_score": 0.05,
+    "survey_candidates_per_query": 200
   }
 }

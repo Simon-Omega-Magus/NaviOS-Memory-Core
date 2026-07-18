@@ -23,18 +23,19 @@ Target runtime: 2 minutes 45 seconds. Hard limit: under 3 minutes.
 > does not automatically surface the right decision when that decision matters.
 > NaviOS Memory Reflex adds a small, local memory layer to Codex.
 
-### 0:18-0:43 - Retrieval Loop
+### 0:18-0:43 - Staged Graph Retrieval
 
 **Visual:** Highlight the upper architecture loop.
 
 **Narration:**
 
-> Selected project notes become sentence and passage cells with exact file,
-> line, cell, and SHA-256 provenance. A prompt supplies lexical evidence seeds.
-> Retrieval can expand through typed links, tags, headings, and document
-> sequence. Unsupported queries abstain instead of forcing a nearest result.
+> Ordinary project notes are non-destructively indexed as sentence and passage
+> cells with exact provenance. Several query angles produce a body-free survey
+> of up to two hundred candidates each. Typed graph links expose nearby
+> evidence, and only selected complete cells are hydrated after their live
+> source revision is verified.
 
-### 0:43-1:05 - Triangulation
+### 0:43-1:05 - Demo And Measurement
 
 **Visual:** Terminal at the repository root.
 
@@ -44,62 +45,74 @@ python3 demo/run_demo.py
 
 **Narration:**
 
-> The CLI and Python API can also triangulate several query formulations. Here,
-> a deterministic demo indexes four synthetic documents into fourteen cells
-> and thirty-eight typed edges. Every returned fragment explains exactly where
-> it came from. The demo never reads the judge's own files and needs no API key.
+> The deterministic demo indexes four synthetic documents into fourteen cells
+> and thirty-eight typed edges. A separate two-hundred-forty-document benchmark
+> surfaces all four required memories, including one graph-only result, abstains
+> on the negative control, and uses about ninety-two percent less body context
+> with selective hydration.
 
-### 1:05-1:38 - Compaction Recovery
+### 1:05-1:27 - Cultivation And Human Will
+
+**Visual:** Scroll to `PROPOSAL-FIRST MEMORY CULTIVATION`, then
+`HUMAN-WILL COHERENCE QUEUE`.
+
+**Narration:**
+
+> Durable lessons are added as append-only, provenance-bound proposals instead
+> of rewriting accepted notes. The agent guidance rejects automatic age decay,
+> and the queue binds each agent-supplied claim label to one exact live source
+> revision with no execution effect. Trusted prompt capture and semantic conflict
+> detection remain future work.
+
+### 1:27-1:52 - Compaction Recovery
 
 **Visual:** Scroll to `COMPACTION RECOVERY`, then show the lower architecture
 loop.
 
 **Narration:**
 
-> Before compaction, NaviOS freezes the accepted checkpoint and the last
-> evidence packet into a digest-locked bundle. After compaction, SessionStart or
-> the next prompt restores it. If hook delivery arrives out of order, the first
-> tool call is denied, receives the frozen bundle, and must be reviewed and
-> reissued. A late PostCompact event cannot silently rearm an already recovered
-> epoch.
+> Before compaction, NaviOS freezes the accepted checkpoint and last evidence
+> packet into a digest-locked bundle. Session Start or the next prompt restores
+> it. If hook delivery arrives out of order, the first tool call is denied,
+> receives the bundle, and must be reviewed and reissued.
 
-### 1:38-2:00 - Safety And Tests
+### 1:52-2:17 - Safety And Tests
 
 **Visual:** Run the focused suite.
 
 ```bash
-python3 -m unittest -q tests/test_memory_reflex.py
+python3 -m unittest -q \
+  tests/test_memory_reflex.py tests/test_staged_benchmark.py
 ```
 
 **Narration:**
 
 > The release is local-first Python and SQLite. Raw prompts are represented in
-> saved state only by a digest. Retrieval packets are strictly bounded, and
-> suspicious filenames and symlink escapes are excluded. Eighteen focused
-> tests cover graph propagation, abstention, provenance, privacy, and the hook
-> lifecycle.
+> saved state only by a digest. Source changes, symlinks, hardlink policy,
+> suspicious filenames, context limits, queue tampering, and hook ordering all
+> fail closed. Forty-five focused tests pass without an API key.
 
-### 2:00-2:26 - Codex And GPT-5.6
+### 2:17-2:41 - Codex And GPT-5.6
 
 **Visual:** Show `docs/BUILD_WEEK_2026.md`, then the plugin manifest.
 
 **Narration:**
 
-> I used GPT-5.6 in Codex to audit an earlier GraphSAGE research repository,
-> reduce a broad memory architecture to a reproducible product, implement the
-> plugin and tests, and investigate real hook-ordering failures. I supplied the
-> long-term memory direction, privacy requirements, scope decisions, and final
-> publication control.
+> I used GPT-5.6 in Codex to audit an earlier Graph Sage research repository,
+> reduce a broad cognitive-memory architecture to a reproducible product,
+> implement and review the plugin, and investigate real hook-ordering failures.
+> I supplied the long-term direction, privacy requirements, scope decisions,
+> and final publication control.
 
-### 2:26-2:35 - Close
+### 2:41-2:50 - Close
 
 **Visual:** Thumbnail plus public repository URL.
 
 **Narration:**
 
-> This is not an infinite context claim. It is a working, inspectable memory
-> reflex for Codex: relevant local evidence before work, and authoritative
-> recovery after compaction.
+> This is not an infinite-context claim. It is a working, inspectable memory
+> reflex: relevant local evidence before work and authoritative recovery after
+> compaction.
 
 ## Final On-Screen URL
 
@@ -126,5 +139,6 @@ fallback narration and slides with:
 media/render-demo-video.sh /tmp/navios-memory-reflex-demo.mp4
 ```
 
-The verified July 18 render is 2 minutes 45.8 seconds. A natural human
-narration over the same shot plan is preferable when practical.
+The verified v0.2 fallback is 2 minutes 46.4 seconds. It is a mechanically
+generated backup; natural narration over the same shot plan is preferable for
+the final submission.

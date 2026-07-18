@@ -10,20 +10,20 @@
   <g font-family="monospace">
     <text x="115" y="190" fill="#57e6ff" font-size="34" font-weight="700">NaviOS Memory Reflex - deterministic judge demo</text>
     <text x="115" y="240" fill="#d6e4ec" font-size="24">Indexed 4 documents into 14 cells and 38 typed edges.</text>
-    <text x="115" y="288" fill="#a99cff" font-size="27" font-weight="700">TRIANGULATED RETRIEVAL</text>
+    <text x="115" y="288" fill="#a99cff" font-size="27" font-weight="700">BODY-FREE SURVEY + SELECTIVE HYDRATION</text>
 
-    <text x="115" y="338" fill="#f4fbff" font-size="23" font-weight="700">1. Compaction Lifecycle</text>
-    <text x="145" y="375" fill="#8fc6d7" font-size="20">Source: docs/architecture.md:15</text>
-    <text x="145" y="408" fill="#8fc6d7" font-size="20">Cell: d54e793464d3b518  |  Evidence SHA-256: 2de04325...</text>
-    <text x="145" y="444" fill="#d6e4ec" font-size="20">After compaction, the bundle is injected through SessionStart or</text>
-    <text x="145" y="474" fill="#d6e4ec" font-size="20">UserPromptSubmit; a late delivery pauses the first tool call.</text>
+    <text x="115" y="338" fill="#f4fbff" font-size="23" font-weight="700">3 query angles | Top-200 candidates/query | typed multi-hop paths</text>
+    <text x="145" y="375" fill="#8fc6d7" font-size="20">240-document benchmark: 4/4 required memories surfaced</text>
+    <text x="145" y="408" fill="#8fc6d7" font-size="20">1 graph-only hit | negative control abstained</text>
+    <text x="145" y="444" fill="#65d990" font-size="22" font-weight="700">91.6% less body context than eager hydration</text>
+    <text x="145" y="474" fill="#d6e4ec" font-size="20">Selected complete cells hydrate only after live revision checks.</text>
 
-    <text x="115" y="535" fill="#a99cff" font-size="27" font-weight="700">COMPACTION RECOVERY</text>
-    <text x="145" y="580" fill="#d6e4ec" font-size="20">SessionStart(startup)     ok</text>
-    <text x="145" y="615" fill="#d6e4ec" font-size="20">UserPromptSubmit          provenance-addressed memory retrieved</text>
-    <text x="145" y="650" fill="#d6e4ec" font-size="20">PreCompact                authoritative checkpoint frozen</text>
-    <text x="145" y="685" fill="#d6e4ec" font-size="20">PostCompact               recovery armed</text>
+    <text x="115" y="535" fill="#a99cff" font-size="27" font-weight="700">CULTIVATION + HUMAN-WILL COHERENCE</text>
+    <text x="145" y="580" fill="#d6e4ec" font-size="20">Proposal cell             append-only + provenance-bound</text>
+    <text x="145" y="615" fill="#d6e4ec" font-size="20">Agent guidance            no automatic age decay</text>
+    <text x="145" y="650" fill="#d6e4ec" font-size="20">Question queue            labels bound to exact live revisions</text>
+    <text x="145" y="685" fill="#d6e4ec" font-size="20">Queue execution effect    none</text>
     <text x="145" y="730" fill="#ffb66d" font-size="22" font-weight="700">PreToolUse                DENY: checkpoint restored; review and reissue</text>
-    <text x="115" y="792" fill="#65d990" font-size="22" font-weight="700">18 focused tests pass | no API key | exact source handles | safe abstention</text>
+    <text x="115" y="792" fill="#65d990" font-size="22" font-weight="700">45 focused tests pass | no API key | exact source handles | safe abstention</text>
   </g>
 </svg>

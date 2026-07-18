@@ -1,0 +1,1 @@
+Durable lessons are added as append-only, provenance-bound proposals instead of rewriting accepted notes. The agent guidance rejects automatic age decay, and the queue binds each agent-supplied claim label to one exact live source revision with no execution effect. Trusted prompt capture and semantic conflict detection remain future work.

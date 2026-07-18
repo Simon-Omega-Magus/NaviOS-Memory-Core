@@ -1,1 +1,0 @@
-The release is local-first Python and SQLite. Raw prompts are represented in saved state only by a digest. Retrieval packets are strictly bounded, and suspicious filenames and symbolic-link escapes are excluded. Eighteen focused tests cover graph propagation, abstention, provenance, privacy, and the hook lifecycle.

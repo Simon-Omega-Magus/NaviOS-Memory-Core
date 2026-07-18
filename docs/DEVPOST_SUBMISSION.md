@@ -3,9 +3,9 @@
 ## Project Overview
 
 - **Project name:** NaviOS Memory Reflex
-- **Elevator pitch:** Local-first memory for Codex: retrieve
-  provenance-linked context through typed graph cells and safely restore
-  authoritative checkpoints after compaction.
+- **Elevator pitch:** A local-first memory reflex for Codex: survey graph-linked
+  evidence without loading every body, hydrate selected current cells, and
+  recover authoritative state safely after compaction.
 - **Submission category:** Developer Tools
 - **Submitter type:** Individual
 
@@ -30,8 +30,8 @@ the ability to abstain.
 
 ### What it does
 
-NaviOS Memory Reflex turns selected project notes into
-provenance-addressed sentence and passage cells. Each cell retains its source
+NaviOS Memory Reflex non-destructively turns selected ordinary project notes
+into replaceable, provenance-addressed sentence and passage cells. Each cell retains its source
 path, exact line range, stable identifier, and SHA-256 content handle.
 
 For each prompt, the plugin:
@@ -39,12 +39,22 @@ For each prompt, the plugin:
 1. Finds evidence-bearing lexical seeds.
 2. Expands through typed graph relations such as document sequence, shared
    headings, explicit links, backlinks, and shared tags.
-3. Injects a bounded context packet with exact source handles, or injects
-   nothing when no supported evidence is found.
+3. Can return a body-free Top-200-per-query candidate survey before any source
+   paragraph enters the context window.
+4. Hydrates only selected complete cells after checking the source's exact byte
+   revision, or injects nothing when no supported evidence is found.
 
 The CLI and Python API also accept several query formulations at once and
 reward evidence reached from more than one direction. The deterministic demo
 shows this triangulation path explicitly.
+
+When work produces a durable lesson, an agent can append a deduplicated,
+provenance-bound proposal cell without rewriting accepted notes. The release
+also encodes a no-age-decay human-will contract and provides an append-only
+question queue that binds each agent-supplied claim label to one live exact
+source revision. The queue has `execution_effect: none`; trusted prompt capture,
+semantic claim extraction, contradiction detection, and authenticated human
+resolution remain follow-on work.
 
 Before Codex compacts its context, NaviOS freezes the authoritative project
 checkpoint and the last retrieval packet into a digest-locked recovery bundle.
@@ -63,11 +73,13 @@ During Build Week, I used GPT-5.6 in Codex to audit that earlier code, identify
 broken contracts and unsupported claims, and narrow the research architecture
 into a reproducible developer tool.
 
-The Build Week implementation adds a fresh deterministic cell index, typed
-multi-hop graph traversal, multi-query triangulation, negative-control
-abstention, exact provenance packets, a Codex plugin and skill, compaction
-hooks, private runtime state, an isolated installation path, focused tests,
-and a one-command judge demonstration. Prior GraphSAGE experiments remain in
+The Build Week implementation adds ordinary-file assimilation, a fresh
+deterministic cell index, typed multi-hop graph traversal, multi-query
+triangulation, body-free survey and selective hydration, negative-control
+abstention, exact provenance packets, proposal-first memory cultivation, a
+human-will coherence queue, a Codex plugin and skill, compaction hooks, private
+runtime state, an isolated installation path, focused tests, a deterministic
+scale benchmark, and a one-command judge demonstration. Prior GraphSAGE experiments remain in
 the repository as clearly labeled historical work rather than being presented
 as part of the default product.
 
@@ -79,13 +91,17 @@ and final publication control.
 ### Challenges
 
 - **Retrieval is not truth.** A relevant old note can still be obsolete or
-  wrong, so every result remains source-linked evidence rather than execution
-  authority.
+  wrong. Provenance, intent kind, lifecycle, and execution capability remain
+  separate. The agent guidance rejects automatic age decay, while semantic
+  classification and authenticated resolution remain future work.
 - **Graph expansion can amplify noise.** Lexical evidence must seed traversal;
   unrelated queries abstain instead of activating a graph hub.
 - **Memory can expose secrets.** Suspicious filenames are excluded by default,
   source selection is explicit, and raw prompts are represented in saved state
   only by a digest rather than transcript text.
+- **A replaceable index can become stale.** Both direct prompt retrieval and
+  selective hydration now fail closed unless the live source still matches its
+  indexed byte hash and hardlink policy.
 - **Hook ordering is not always intuitive.** Live testing exposed a case where
   `PostCompact` could arrive after another recovery path had already delivered
   the bundle. The state machine and regression tests now prevent that late
@@ -100,6 +116,10 @@ the one that can explain exactly why each fragment appeared, remain quiet on
 unsupported queries, and recover an authoritative working state when the
 model's transient context changes.
 
+We also learned that memory influence and permission to act must not be one
+boolean. A long-lived human preference should continue shaping design without
+authorizing publication, spending, deletion, or any other gated operation.
+
 We also learned to treat deterministic graph retrieval as a strong,
 inspectable baseline. Learned GNN views may become useful later, but they
 should earn a place through held-out evaluation rather than being assumed
@@ -108,7 +128,9 @@ superior.
 ### What's next
 
 - Evaluate retrieval on prospective real-world agent tasks.
-- Add authority, currentness, and contradiction-aware evidence handling.
+- Add trusted prompt capture, versioned will-claim classification, automatic
+  contradiction proposals, authenticated resolution receipts, and a TUI review
+  surface.
 - Compare specialist learned GNN views against the deterministic baseline.
 - Support additional structured source types and memory-cell views.
 - Measure whether the complete reflex reduces repeated reading and improves
@@ -142,7 +164,7 @@ Add after the Build Week branch is reviewed, committed, and pushed:
 - **Architecture:** `media/navios-memory-reflex-architecture.png` (1600x900).
 - **Proof visual:** `media/navios-memory-reflex-proof.png` (1600x900).
 - **Video script:** `docs/DEMO_VIDEO_SCRIPT.md` (target runtime 2:45).
-- **Verified fallback render:** 2:45.8 with synthetic narration; use natural
+- **Verified fallback render:** 2:46.4 with synthetic narration; use natural
   narration instead when practical.
 - **Public YouTube demo:** Pending final narration/capture and upload.
 
@@ -179,6 +201,7 @@ Run the focused tests:
 
 ```bash
 python3 -m unittest -v tests/test_memory_reflex.py
+python3 -m unittest -v tests/test_staged_benchmark.py
 ```
 
 Optional Codex plugin installation:
