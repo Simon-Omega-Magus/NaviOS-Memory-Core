@@ -1,5 +1,7 @@
 # NaviOS Memory Reflex
 
+[![Verify NaviOS Memory Reflex](https://github.com/Simon-Omega-Magus/NaviOS-Memory-Core/actions/workflows/ci.yml/badge.svg?branch=build-week-2026-memory-reflex)](https://github.com/Simon-Omega-Magus/NaviOS-Memory-Core/actions/workflows/ci.yml)
+
 NaviOS Memory Reflex is a local-first memory and compaction-recovery layer for Codex. It turns selected project notes into provenance-addressed cells, retrieves relevant evidence on each prompt, expands through typed graph edges, and restores a frozen authoritative checkpoint after context compaction.
 
 This Build Week release deliberately makes a narrower claim than "infinite memory": it provides a runnable, inspectable memory reflex with explicit abstention and exact evidence handles.
