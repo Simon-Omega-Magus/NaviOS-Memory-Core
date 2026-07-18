@@ -1,0 +1,1 @@
+Selected project notes become sentence and passage cells with exact file, line, cell, and SHA-256 provenance. A prompt supplies lexical evidence seeds. Retrieval can expand through typed links, tags, headings, and document sequence. Unsupported queries abstain instead of forcing a nearest result.

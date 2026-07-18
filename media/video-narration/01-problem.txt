@@ -1,0 +1,1 @@
+Coding agents can solve difficult problems and still lose critical intent when their context is compacted. A transcript preserves chronology, but it does not automatically surface the right decision when that decision matters. NaviOS Memory Reflex adds a small, local memory layer to Codex.

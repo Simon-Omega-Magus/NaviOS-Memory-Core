@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07111f"/>
+      <stop offset="1" stop-color="#102a3a"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto">
+      <path d="M0 0 L11 5.5 L0 11 Z" fill="#58ddf4"/>
+    </marker>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <text x="90" y="88" fill="#f5fbff" font-family="sans-serif" font-size="54" font-weight="800">NaviOS Memory Reflex</text>
+  <text x="90" y="133" fill="#9db8c8" font-family="sans-serif" font-size="25">Two bounded loops: relevant local evidence before work, authoritative recovery after compaction</text>
+
+  <rect x="70" y="180" width="1460" height="250" rx="28" fill="#0a1b2a" stroke="#26546c" stroke-width="2"/>
+  <text x="105" y="224" fill="#57e6ff" font-family="sans-serif" font-size="25" font-weight="700">PROMPT MEMORY REFLEX</text>
+
+  <g font-family="sans-serif" text-anchor="middle">
+    <g transform="translate(105 265)">
+      <rect width="220" height="105" rx="18" fill="#123247" stroke="#4cbdd3" stroke-width="3"/>
+      <text x="110" y="46" fill="#f4fbff" font-size="24" font-weight="700">User prompt</text>
+      <text x="110" y="76" fill="#a9bfcc" font-size="17">ephemeral query</text>
+    </g>
+    <g transform="translate(380 265)">
+      <rect width="220" height="105" rx="18" fill="#123247" stroke="#4cbdd3" stroke-width="3"/>
+      <text x="110" y="46" fill="#f4fbff" font-size="24" font-weight="700">Lexical seeds</text>
+      <text x="110" y="76" fill="#a9bfcc" font-size="17">evidence required</text>
+    </g>
+    <g transform="translate(655 265)">
+      <rect width="250" height="105" rx="18" fill="#163044" stroke="#8b7dff" stroke-width="3"/>
+      <text x="125" y="42" fill="#f4fbff" font-size="24" font-weight="700">Typed graph</text>
+      <text x="125" y="72" fill="#a9bfcc" font-size="17">multi-hop expansion</text>
+      <text x="125" y="94" fill="#829bab" font-size="14">links / tags / sequence</text>
+    </g>
+    <g transform="translate(960 265)">
+      <rect width="250" height="105" rx="18" fill="#123247" stroke="#4cbdd3" stroke-width="3"/>
+      <text x="125" y="42" fill="#f4fbff" font-size="24" font-weight="700">Context packet</text>
+      <text x="125" y="72" fill="#a9bfcc" font-size="17">bounded + provenance</text>
+      <text x="125" y="94" fill="#829bab" font-size="14">or abstain</text>
+    </g>
+    <g transform="translate(1265 265)">
+      <rect width="220" height="105" rx="18" fill="#153b45" stroke="#57e6ff" stroke-width="3"/>
+      <text x="110" y="46" fill="#f4fbff" font-size="24" font-weight="700">Codex</text>
+      <text x="110" y="76" fill="#a9bfcc" font-size="17">relevant evidence</text>
+    </g>
+  </g>
+
+  <g fill="none" stroke="#58ddf4" stroke-width="4" marker-end="url(#arrow)">
+    <path d="M325 318 H372"/>
+    <path d="M600 318 H647"/>
+    <path d="M905 318 H952"/>
+    <path d="M1210 318 H1257"/>
+  </g>
+
+  <rect x="70" y="485" width="1460" height="325" rx="28" fill="#0a1b2a" stroke="#3e4774" stroke-width="2"/>
+  <text x="105" y="529" fill="#a99cff" font-family="sans-serif" font-size="25" font-weight="700">COMPACTION RECOVERY</text>
+
+  <g font-family="sans-serif" text-anchor="middle">
+    <g transform="translate(105 590)">
+      <rect width="225" height="115" rx="18" fill="#172c45" stroke="#8b7dff" stroke-width="3"/>
+      <text x="112" y="44" fill="#f4fbff" font-size="23" font-weight="700">PreCompact</text>
+      <text x="112" y="76" fill="#a9bfcc" font-size="17">freeze state</text>
+    </g>
+    <g transform="translate(385 575)">
+      <path d="M30 16 H220 L250 46 V145 H30 Z" fill="#173849" stroke="#57e6ff" stroke-width="3"/>
+      <path d="M220 16 V46 H250" fill="none" stroke="#57e6ff" stroke-width="3"/>
+      <text x="140" y="65" fill="#f4fbff" font-size="22" font-weight="700">Frozen bundle</text>
+      <text x="140" y="96" fill="#a9bfcc" font-size="16">checkpoint + evidence</text>
+      <text x="140" y="121" fill="#829bab" font-size="14">SHA-256 locked</text>
+    </g>
+    <g transform="translate(720 590)">
+      <rect width="240" height="115" rx="18" fill="#172c45" stroke="#8b7dff" stroke-width="3"/>
+      <text x="120" y="43" fill="#f4fbff" font-size="22" font-weight="700">PostCompact</text>
+      <text x="120" y="74" fill="#a9bfcc" font-size="16">recovery pending</text>
+      <text x="120" y="98" fill="#829bab" font-size="14">order-aware state</text>
+    </g>
+    <g transform="translate(1015 575)">
+      <rect width="235" height="145" rx="18" fill="#153b45" stroke="#57e6ff" stroke-width="3"/>
+      <text x="118" y="43" fill="#f4fbff" font-size="21" font-weight="700">Normal delivery</text>
+      <text x="118" y="76" fill="#a9bfcc" font-size="16">SessionStart</text>
+      <text x="118" y="100" fill="#a9bfcc" font-size="16">or next prompt</text>
+      <text x="118" y="126" fill="#7ce7c4" font-size="15">checkpoint restored</text>
+    </g>
+    <g transform="translate(1300 575)">
+      <path d="M115 0 L218 48 V118 C218 178 165 211 115 235 C65 211 12 178 12 118 V48 Z" fill="#1b3048" stroke="#ffb66d" stroke-width="4" transform="scale(.82)"/>
+      <text x="94" y="70" fill="#f4fbff" font-size="20" font-weight="700">Fallback</text>
+      <text x="94" y="100" fill="#ffd0a4" font-size="16">deny first tool</text>
+      <text x="94" y="127" fill="#a9bfcc" font-size="14">inject + reissue</text>
+    </g>
+  </g>
+
+  <g fill="none" stroke="#988dff" stroke-width="4" marker-end="url(#arrow)">
+    <path d="M330 648 H377"/>
+    <path d="M635 648 H712"/>
+    <path d="M960 648 H1007"/>
+    <path d="M1250 648 H1287" stroke-dasharray="10 10"/>
+  </g>
+  <text x="1270" y="563" fill="#ffbf80" font-family="sans-serif" font-size="14" text-anchor="middle">if delivery is late</text>
+
+  <text x="800" y="860" fill="#7895a8" font-family="sans-serif" font-size="20" text-anchor="middle">Local Python + SQLite | raw prompt not persisted | evidence is not execution authority</text>
+</svg>

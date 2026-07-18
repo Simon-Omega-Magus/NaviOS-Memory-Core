@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07111f"/>
+      <stop offset="1" stop-color="#143047"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1400" cy="90" r="330" fill="#1b4a61" opacity="0.3"/>
+  <text x="800" y="245" fill="#f5fbff" font-family="sans-serif" font-size="92" font-weight="800" text-anchor="middle">NaviOS Memory Reflex</text>
+  <text x="800" y="325" fill="#63dcf4" font-family="sans-serif" font-size="36" font-weight="700" text-anchor="middle">Relevant evidence before work. Authoritative recovery after compaction.</text>
+  <rect x="250" y="420" width="1100" height="165" rx="24" fill="#0b1d2d" stroke="#57e6ff" stroke-width="3"/>
+  <text x="800" y="485" fill="#9db8c8" font-family="sans-serif" font-size="25" text-anchor="middle">PUBLIC REPOSITORY</text>
+  <text x="800" y="535" fill="#f5fbff" font-family="monospace" font-size="30" font-weight="700" text-anchor="middle">github.com/Simon-Omega-Magus/NaviOS-Memory-Core</text>
+  <text x="800" y="635" fill="#aa9dff" font-family="monospace" font-size="24" text-anchor="middle">build-week-2026-memory-reflex | commit 4cec64c</text>
+  <g transform="translate(650 710)">
+    <rect width="300" height="66" rx="33" fill="#12384c" stroke="#57e6ff" stroke-width="2"/>
+    <text x="150" y="43" fill="#d9f9ff" font-family="sans-serif" font-size="23" font-weight="700" text-anchor="middle">OPENAI BUILD WEEK 2026</text>
+  </g>
+</svg>

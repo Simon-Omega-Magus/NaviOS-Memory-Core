@@ -138,13 +138,13 @@ Add after the Build Week branch is reviewed, committed, and pushed:
 
 ## Media
 
-Add after final demo capture:
-
-- project thumbnail, 3:2 ratio;
-- retrieval packet screenshot;
-- compaction-recovery screenshot;
-- architecture diagram;
-- public YouTube demo under three minutes.
+- **Thumbnail:** `media/navios-memory-reflex-thumbnail.png` (1500x1000, 3:2).
+- **Architecture:** `media/navios-memory-reflex-architecture.png` (1600x900).
+- **Proof visual:** `media/navios-memory-reflex-proof.png` (1600x900).
+- **Video script:** `docs/DEMO_VIDEO_SCRIPT.md` (target runtime 2:45).
+- **Verified fallback render:** 2:45.8 with synthetic narration; use natural
+  narration instead when practical.
+- **Public YouTube demo:** Pending final narration/capture and upload.
 
 ## Additional Information
 

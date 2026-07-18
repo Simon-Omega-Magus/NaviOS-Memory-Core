@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1000" viewBox="0 0 1500 1000">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07111f"/>
+      <stop offset="0.55" stop-color="#0b2035"/>
+      <stop offset="1" stop-color="#102a3a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#57e6ff"/>
+      <stop offset="1" stop-color="#8b7dff"/>
+    </linearGradient>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1500" height="1000" fill="url(#bg)"/>
+  <circle cx="1320" cy="120" r="310" fill="#173d55" opacity="0.34"/>
+  <circle cx="110" cy="940" r="360" fill="#17294f" opacity="0.32"/>
+
+  <g transform="translate(105 105)">
+    <rect width="194" height="46" rx="23" fill="#12384c" stroke="#57e6ff" stroke-width="2"/>
+    <text x="97" y="30" fill="#d9f9ff" font-family="sans-serif" font-size="20" font-weight="700" text-anchor="middle">CODEX PLUGIN</text>
+  </g>
+
+  <text x="105" y="275" fill="#f5fbff" font-family="sans-serif" font-size="118" font-weight="800" letter-spacing="-4">NaviOS</text>
+  <text x="105" y="378" fill="url(#accent)" font-family="sans-serif" font-size="84" font-weight="800" letter-spacing="3">MEMORY REFLEX</text>
+  <text x="110" y="452" fill="#b9cad8" font-family="sans-serif" font-size="34">Local memory. Exact provenance.</text>
+  <text x="110" y="500" fill="#b9cad8" font-family="sans-serif" font-size="34">Safe compaction recovery.</text>
+
+  <g transform="translate(110 620)">
+    <rect width="270" height="76" rx="18" fill="#0e2e40" stroke="#2f6b82" stroke-width="2"/>
+    <text x="135" y="48" fill="#d7f8ff" font-family="sans-serif" font-size="25" font-weight="700" text-anchor="middle">LOCAL-FIRST</text>
+    <rect x="294" width="300" height="76" rx="18" fill="#0e2e40" stroke="#2f6b82" stroke-width="2"/>
+    <text x="444" y="48" fill="#d7f8ff" font-family="sans-serif" font-size="25" font-weight="700" text-anchor="middle">NO API KEY</text>
+    <rect x="608" width="368" height="76" rx="18" fill="#0e2e40" stroke="#2f6b82" stroke-width="2"/>
+    <text x="792" y="48" fill="#d7f8ff" font-family="sans-serif" font-size="25" font-weight="700" text-anchor="middle">BOUNDED + AUDITABLE</text>
+  </g>
+
+  <g transform="translate(1070 490) scale(.86)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 175 C190 48 315 54 410 150" fill="none" stroke="#57e6ff" stroke-width="9" opacity="0.8"/>
+    <path d="M75 180 C195 305 320 300 420 175" fill="none" stroke="#8b7dff" stroke-width="9" opacity="0.8"/>
+    <path d="M118 125 L235 178 L350 115 M235 178 L365 240 M235 178 L115 250" fill="none" stroke="#7fdff1" stroke-width="5" opacity="0.8"/>
+    <g fill="#07111f" stroke-width="7" filter="url(#glow)">
+      <circle cx="80" cy="175" r="30" stroke="#57e6ff"/>
+      <circle cx="118" cy="125" r="24" stroke="#57e6ff"/>
+      <circle cx="115" cy="250" r="24" stroke="#8b7dff"/>
+      <circle cx="235" cy="178" r="38" stroke="#f5fbff"/>
+      <circle cx="350" cy="115" r="24" stroke="#57e6ff"/>
+      <circle cx="365" cy="240" r="24" stroke="#8b7dff"/>
+      <circle cx="420" cy="175" r="30" stroke="#8b7dff"/>
+    </g>
+    <path d="M205 350 L265 320 L325 350 V420 C325 465 293 495 265 510 C237 495 205 465 205 420 Z" fill="#102f43" stroke="#57e6ff" stroke-width="6"/>
+    <path d="M238 412 L258 432 L296 388" fill="none" stroke="#d9f9ff" stroke-width="10"/>
+  </g>
+
+  <text x="105" y="905" fill="#7f9bae" font-family="sans-serif" font-size="25">Typed graph cells + digest-locked checkpoint recovery</text>
+</svg>

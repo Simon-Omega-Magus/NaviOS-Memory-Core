@@ -4,6 +4,8 @@ NaviOS Memory Reflex is a local-first memory and compaction-recovery layer for C
 
 This Build Week release deliberately makes a narrower claim than "infinite memory": it provides a runnable, inspectable memory reflex with explicit abstention and exact evidence handles.
 
+![NaviOS Memory Reflex](media/navios-memory-reflex-thumbnail.png)
+
 ## What It Demonstrates
 
 - **Prompt memory reflex:** Codex `UserPromptSubmit` hooks retrieve relevant project memory automatically.
@@ -135,6 +137,16 @@ The `build-week-2026-memory-reflex` branch adds the post-July-13 implementation 
 - deterministic judge demo and focused tests
 
 See [Build Week development record](docs/BUILD_WEEK_2026.md) for the distinction between prior work and the submitted extension.
+
+## Judge Media
+
+- [Project thumbnail](media/navios-memory-reflex-thumbnail.png)
+- [Architecture visual](media/navios-memory-reflex-architecture.png)
+- [Deterministic proof visual](media/navios-memory-reflex-proof.png)
+- [Under-three-minute video script](docs/DEMO_VIDEO_SCRIPT.md)
+
+The optional `media/render-demo-video.sh` script produces a complete narrated
+fallback video when `ffmpeg`, `ffprobe`, and `espeak-ng` are installed.
 
 ## Codex and GPT-5.6 Collaboration
 
