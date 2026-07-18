@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "navios-memory-reflex"
+version = "0.1.0"
+description = "Local-first prompt memory retrieval and compaction recovery for Codex"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+  {name = "Simon Omega Magus"}
+]
+keywords = ["codex", "memory", "retrieval", "provenance", "compaction"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Libraries",
+]
+
+[project.scripts]
+navios-memory = "navios_memory_reflex.cli:main"
+
+[tool.setuptools]
+package-dir = {navios_memory_reflex = "plugins/navios-memory-reflex/navios_memory_reflex"}
+packages = ["navios_memory_reflex"]

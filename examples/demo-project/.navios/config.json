@@ -1,0 +1,22 @@
+{
+  "schema": "navios-memory-config-v1",
+  "include": [
+    ".navios/checkpoint.md",
+    "docs/**/*.md"
+  ],
+  "exclude": [
+    ".git/**",
+    ".navios/memory.sqlite3",
+    "**/.env*",
+    "**/*credential*",
+    "**/*secret*",
+    "**/*token*"
+  ],
+  "max_file_bytes": 524288,
+  "retrieval": {
+    "top_k": 8,
+    "graph_hops": 2,
+    "max_context_chars": 7000,
+    "minimum_score": 0.05
+  }
+}

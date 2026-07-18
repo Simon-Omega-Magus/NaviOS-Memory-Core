@@ -1,0 +1,6 @@
+.git/**
+.navios/memory.sqlite3
+**/.env*
+**/*credential*
+**/*secret*
+**/*token*

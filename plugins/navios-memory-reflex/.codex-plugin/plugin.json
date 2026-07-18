@@ -1,0 +1,37 @@
+{
+  "name": "navios-memory-reflex",
+  "version": "0.1.0",
+  "description": "Local-first prompt memory retrieval and compaction recovery for Codex.",
+  "author": {
+    "name": "Simon Omega Magus",
+    "url": "https://github.com/Simon-Omega-Magus"
+  },
+  "homepage": "https://github.com/Simon-Omega-Magus/NaviOS-Memory-Core",
+  "repository": "https://github.com/Simon-Omega-Magus/NaviOS-Memory-Core",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "memory",
+    "retrieval",
+    "provenance",
+    "compaction"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "NaviOS Memory Reflex",
+    "shortDescription": "Retrieve durable local memory and recover after compaction.",
+    "longDescription": "A local-first Codex memory layer that turns project notes into provenance-addressed cells, expands retrieval through typed graph edges, and restores a frozen authoritative checkpoint after context compaction.",
+    "developerName": "Simon Omega Magus",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Interactive"
+    ],
+    "websiteURL": "https://github.com/Simon-Omega-Magus/NaviOS-Memory-Core",
+    "defaultPrompt": [
+      "Initialize durable memory for this project",
+      "Retrieve relevant memory with exact provenance",
+      "Show the current compaction recovery checkpoint"
+    ]
+  }
+}
